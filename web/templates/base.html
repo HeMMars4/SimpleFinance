@@ -1,0 +1,256 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Finance</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Unbounded:wght@300;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0a0c0f;
+      --surface:  #111418;
+      --border:   #1e2329;
+      --muted:    #3d4451;
+      --text:     #e8eaf0;
+      --subtext:  #7a8499;
+      --green:    #00e676;
+      --green-dim:#004d25;
+      --red:      #ff5252;
+      --red-dim:  #4d0000;
+      --gold:     #ffc107;
+      --blue:     #448aff;
+      --mono:     'JetBrains Mono', monospace;
+      --display:  'Unbounded', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    /* Grid noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,230,118,.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,230,118,.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(10,12,15,.95);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-brand {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: .05em;
+      color: var(--green);
+    }
+
+    .nav-brand span { color: var(--subtext); font-weight: 300; }
+
+    nav a {
+      color: var(--subtext);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+    nav a:hover { color: var(--text); }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+    }
+
+    .card-label {
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--subtext);
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 28px;
+      color: var(--green);
+      line-height: 1.1;
+    }
+
+    .card-value.credit { color: var(--red); }
+    .card-value.neutral { color: var(--text); }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--subtext);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .asset-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 32px;
+    }
+
+    .asset-table th {
+      font-size: 9px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .asset-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(30,35,41,.5);
+      vertical-align: middle;
+    }
+
+    .asset-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    .source-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .badge-tbank    { background: rgba(255,221,0,.1);  color: #ffdd00; border: 1px solid rgba(255,221,0,.2); }
+    .badge-bybit    { background: rgba(247,147,26,.1); color: #f7931a; border: 1px solid rgba(247,147,26,.2); }
+    .badge-bitcoin  { background: rgba(247,147,26,.1); color: #f7931a; border: 1px solid rgba(247,147,26,.2); }
+    .badge-monero   { background: rgba(255,102,0,.1);  color: #ff6600; border: 1px solid rgba(255,102,0,.2); }
+
+    .amount-rub  { color: var(--text); font-weight: 600; }
+    .amount-raw  { color: var(--subtext); font-size: 11px; }
+    .amount-neg  { color: var(--red); }
+
+    .type-tag {
+      font-size: 9px;
+      color: var(--subtext);
+      letter-spacing: .08em;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .08em;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn:hover { border-color: var(--green); color: var(--green); }
+    .btn.primary { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+    .btn.primary:hover { background: rgba(0,230,118,.2); }
+
+    .htmx-request .spinner { animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner { display: inline-block; }
+
+    .error-banner {
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+      border-radius: 6px;
+      padding: 10px 16px;
+      color: var(--red);
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+
+    .timestamp {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+
+    /* Credit section styling */
+    .credit-section {
+      opacity: .7;
+      border: 1px solid rgba(255,82,82,.15);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+    }
+
+    .credit-section .section-title { color: var(--red); border-color: rgba(255,82,82,.2); }
+
+    @media (max-width: 768px) {
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+      main { padding: 16px; }
+    }
+
+    @media (max-width: 480px) {
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  {{block "content" .}}{{end}}
+</body>
+</html>
+{{end}}

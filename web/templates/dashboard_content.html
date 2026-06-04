@@ -1,0 +1,130 @@
+{{define "dashboard_content.html"}}
+{{if .Error}}
+<div class="error-banner">⚠ {{.Error}}</div>
+{{end}}
+
+<!-- Summary cards -->
+<div class="grid-3">
+  <div class="card">
+    <div class="card-label">Итого активов</div>
+    <div class="card-value">{{fmtRUB .TotalRUB}}</div>
+    <div class="timestamp" style="margin-top:8px">без кредитных</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Банк & сбережения</div>
+    <div class="card-value neutral">
+      {{$bankSum := 0.0}}
+      {{range .BankAssets}}{{$bankSum = (printf "%.2f" (add $bankSum .AmountRUB))}}{{end}}
+      {{fmtRUB .TotalRUB}}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Крипто</div>
+    <div class="card-value neutral">
+      {{$cSum := 0.0}}
+      {{range .CryptoAssets}}
+        {{$cSum = $cSum}}
+      {{end}}
+      <!-- computed server-side in Go, show subset -->
+      {{$c := 0.0}}
+      {{range .CryptoAssets}}{{end}}
+      {{/* We'll just show count for now */}}
+      {{len .CryptoAssets}} активов
+    </div>
+  </div>
+</div>
+
+<!-- Bank assets -->
+{{if .BankAssets}}
+<div class="section-title">Банковские счета — T-Bank</div>
+<table class="asset-table">
+  <thead>
+    <tr>
+      <th>Счёт</th>
+      <th>Баланс</th>
+      <th>В рублях</th>
+      <th>Тип</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .BankAssets}}
+  <tr>
+    <td>
+      <span class="source-badge badge-{{.Source}}">{{.Source}}</span>
+      &nbsp;{{.Name}}
+    </td>
+    <td>
+      <span class="amount-rub">{{fmtFloat .AmountRaw}}</span>
+      <span class="amount-raw"> {{.Currency}}</span>
+    </td>
+    <td><span class="amount-rub">{{fmtRUB .AmountRUB}}</span></td>
+    <td><span class="type-tag">{{.Type}}</span></td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}
+
+<!-- Crypto assets -->
+{{if .CryptoAssets}}
+<div class="section-title">Крипто активы</div>
+<table class="asset-table">
+  <thead>
+    <tr>
+      <th>Актив</th>
+      <th>Количество</th>
+      <th>В рублях</th>
+      <th>Источник</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .CryptoAssets}}
+  <tr>
+    <td>
+      <span class="source-badge badge-{{.Source}}">{{.Currency}}</span>
+      &nbsp;{{.Name}}
+    </td>
+    <td>
+      <span class="amount-raw">{{fmtCrypto .AmountRaw .Currency}}</span>
+    </td>
+    <td><span class="amount-rub">{{fmtRUB .AmountRUB}}</span></td>
+    <td><span class="type-tag">{{.Source}}</span></td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}
+
+<!-- Credit cards — separate section -->
+{{if .CreditCards}}
+<div class="credit-section">
+  <div class="section-title">Кредитные карты (не в общем итоге)</div>
+  <table class="asset-table">
+    <thead>
+      <tr>
+        <th>Карта</th>
+        <th>Доступный лимит</th>
+        <th>В рублях</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .CreditCards}}
+    <tr>
+      <td>
+        <span class="source-badge badge-{{.Source}}">{{.Source}}</span>
+        &nbsp;{{.Name}}
+      </td>
+      <td><span class="amount-rub">{{fmtFloat .AmountRaw}} {{.Currency}}</span></td>
+      <td><span class="amount-rub amount-neg">{{fmtRUB .AmountRUB}}</span></td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <div style="font-size:11px; color:var(--subtext)">
+    Общий доступный лимит: <span style="color:var(--red)">{{fmtRUB .CreditTotalRUB}}</span>
+  </div>
+</div>
+{{end}}
+
+<div class="timestamp">Обновлено: {{.LastUpdated.Format "02.01.2006 15:04:05"}}</div>
+{{end}}

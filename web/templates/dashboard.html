@@ -1,0 +1,23 @@
+{{template "base" .}}
+{{define "content"}}
+<nav>
+  <div class="nav-brand">Simple<span>Finance</span></div>
+  <div style="display:flex; align-items:center; gap:16px">
+    <button
+      class="btn primary"
+      hx-post="/refresh"
+      hx-target="#dashboard-content"
+      hx-indicator="#refresh-btn"
+      id="refresh-btn">
+      <span class="spinner">↻</span> Обновить
+    </button>
+    <a href="/logout">Выход</a>
+  </div>
+</nav>
+
+<main>
+  <div id="dashboard-content">
+    {{template "dashboard_content.html" .}}
+  </div>
+</main>
+{{end}}

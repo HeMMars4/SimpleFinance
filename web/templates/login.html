@@ -1,0 +1,94 @@
+{{template "base" .}}
+{{define "content"}}
+<style>
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-box {
+    width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+  }
+  .login-logo {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+  .login-logo span { color: var(--subtext); font-weight: 300; }
+  .login-sub {
+    font-size: 11px;
+    color: var(--subtext);
+    letter-spacing: .08em;
+    margin-bottom: 32px;
+  }
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .field input:focus { border-color: var(--green); }
+  .btn-login {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--green-dim);
+    border: 1px solid var(--green);
+    border-radius: 6px;
+    color: var(--green);
+    font-family: var(--display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-login:hover { background: rgba(0,230,118,.2); }
+</style>
+
+<div class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">Simple<span>Finance</span></div>
+    <div class="login-sub">Asset Tracker</div>
+
+    {{if .}}{{with .Error}}
+    <div class="error-banner" style="margin-bottom:16px">{{.}}</div>
+    {{end}}{{end}}
+
+    <form method="POST" action="/login">
+      <div class="field">
+        <label>Логин</label>
+        <input type="text" name="username" autocomplete="username" autofocus>
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" name="password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-login">Войти</button>
+    </form>
+  </div>
+</div>
+{{end}}

@@ -4,29 +4,27 @@
 T-Bank(частично, с ограничениями и ручным вводом токена, из-за отсутствия у банков в РФ OpenApi), Bybit, Bitcoin cold wallets, Monero, инвентарь Steam, Т-Инвестиций. Также реализован AI анализ ваших активов(пока только РФ), и предложение от AI. В тестировании сейчас торговый бот под Т-Инвестиции, который запускает демона и торгует за вас по усмотрению ИИ
 
 ## Быстрый старт
-# У вас должен быть установлен  Docker
-# 1. git clone https://github.com/HeMMars4/SimpleFinance.git
-# 2. Создайте .env c параметрами 
-DB_USER="ИМЯ ПОЛЬЗОВАТЕЛЯ"
-DB_PASSWORD="ПАРОЛЬ"
-DB_NAME=simple_finance
-DB_HOST=db
-DB_PORT=5432
-APP_PORT=8081(можно любой внешний порт)
-TLS_CERT=/certs/fullchain.pem(тут по желанию, но лучше сертификаты поставить)
-TLS_KEY=/certs/privkey.pem
-
-APP_SECRET=(тут любое значение больше 32 символов)
-
-MONERO_DAEMON_HOST=xmr-node.cakewallet.com
-MONERO_DAEMON_PORT=18081
-
-
-# 3. Запуск
-docker compose up -d
-
-# 4. Открой http://your-vps-ip:<порт из .env>
-```
+У вас должен быть установлен  Docker
+  1. git clone https://github.com/HeMMars4/SimpleFinance.git
+  2. Создайте .env c параметрами 
+  ```
+    DB_USER="ИМЯ ПОЛЬЗОВАТЕЛЯ"
+    DB_PASSWORD="ПАРОЛЬ"
+    DB_NAME=simple_finance
+    DB_HOST=db
+    DB_PORT=5432
+    APP_PORT=8081(можно любой внешний порт)
+    TLS_CERT=/certs/fullchain.pem(тут по желанию, но лучше сертификаты поставить)
+    TLS_KEY=/certs/privkey.pem
+    APP_SECRET=(тут любое значение больше 32 символов)
+    MONERO_DAEMON_HOST=xmr-node.cakewallet.com
+    MONERO_DAEMON_PORT=18081
+  ```
+  3. Запуск
+  ```
+    docker compose up -d
+    ```
+  4. Открой http://your-vps-ip:<порт из .env>
 
 ## Обновление T-Bank сессии
 

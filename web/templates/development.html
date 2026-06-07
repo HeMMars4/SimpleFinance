@@ -1,0 +1,240 @@
+{{template "base" .}}
+{{define "content"}}
+<nav>
+  <div class="nav-brand">Simple<span>Finance</span></div>
+  <div style="display:flex; align-items:center; gap:16px">
+    <a href="/">← Дашборд</a>
+    <a href="/develop" class="active">Развитие</a>
+    <a href="/settings">Настройки</a>
+    <a href="/logout">Выход</a>
+  </div>
+</nav>
+
+<main>
+  <div style="max-width:780px; margin:0 auto">
+
+    <div style="margin-bottom:32px">
+      <div style="font-family:var(--display); font-size:18px; font-weight:600; color:var(--green); margin-bottom:6px">Развитие</div>
+      <div style="font-size:11px; color:var(--subtext)">Автономный торговый бот + ИИ-анализ портфеля через Claude</div>
+    </div>
+
+    {{if .Saved}}
+    <div class="error-banner" style="background:var(--green-dim); border-color:var(--green); color:var(--green); margin-bottom:24px">
+      ✓ Настройки сохранены
+    </div>
+    {{end}}
+
+    <!-- Settings -->
+    <div class="card" style="margin-bottom:20px">
+      <div style="font-size:11px; letter-spacing:.1em; color:var(--text); margin-bottom:20px">Настройки ИИ и бота</div>
+      <form method="POST" action="/develop">
+
+        <div class="field">
+          <label>Claude API Key</label>
+          <input type="password" name="claude_api_key"
+            value="{{if .Settings}}{{.Settings.ClaudeAPIKey}}{{end}}"
+            placeholder="sk-ant-api03-…" autocomplete="off">
+          <div class="field-hint">Ключ из <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — нужен для анализа и автоторговли</div>
+        </div>
+
+        <div class="field">
+          <label>T-Инвестиции — торговый токен</label>
+          <input type="password" name="tinvest_trade_token"
+            value="{{if .Settings}}{{.Settings.TInvestTradeToken}}{{end}}"
+            placeholder="t.…" autocomplete="off">
+          <div class="field-hint">Токен с правами на торговлю (не read-only). Нужен для исполнения ордеров.</div>
+        </div>
+
+        <div class="field">
+          <label>Уровень риска</label>
+          <div style="display:flex; gap:12px; margin-top:6px">
+            <label class="risk-opt">
+              <input type="radio" name="risk_level" value="low" {{if and .Settings (eq .Settings.RiskLevel "low")}}checked{{end}}>
+              <span class="risk-label low">Низкий</span>
+              <span class="risk-desc">ОФЗ, голубые фишки</span>
+            </label>
+            <label class="risk-opt">
+              <input type="radio" name="risk_level" value="medium" {{if or (not .Settings) (eq .Settings.RiskLevel "medium")}}checked{{end}}>
+              <span class="risk-label medium">Средний</span>
+              <span class="risk-desc">ETF, 2-3 эшелон</span>
+            </label>
+            <label class="risk-opt">
+              <input type="radio" name="risk_level" value="high" {{if and .Settings (eq .Settings.RiskLevel "high")}}checked{{end}}>
+              <span class="risk-label high">Высокий</span>
+              <span class="risk-desc">Рост, спекуляции</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+          <div class="field">
+            <label>Макс. потеря за цикл (%)</label>
+            <input type="number" name="max_loss_pct" min="0.5" max="50" step="0.5"
+              value="{{if .Settings}}{{.Settings.MaxLossPct}}{{else}}5{{end}}"
+              style="width:110px">
+            <div class="field-hint">Стоп-лосс ставится автоматически на покупки</div>
+          </div>
+          <div class="field">
+            <label>Интервал бота</label>
+            <select name="bot_interval_minutes" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;cursor:pointer">
+              <option value="15"  {{if and .Settings (eq .Settings.BotIntervalMinutes 15) }}selected{{end}}>15 мин</option>
+              <option value="30"  {{if and .Settings (eq .Settings.BotIntervalMinutes 30) }}selected{{end}}>30 мин</option>
+              <option value="60"  {{if or (not .Settings) (eq .Settings.BotIntervalMinutes 60)}}selected{{end}}>1 час</option>
+              <option value="120" {{if and .Settings (eq .Settings.BotIntervalMinutes 120)}}selected{{end}}>2 часа</option>
+              <option value="240" {{if and .Settings (eq .Settings.BotIntervalMinutes 240)}}selected{{end}}>4 часа</option>
+            </select>
+            <div class="field-hint">Пауза между циклами анализа и сделок</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:0; font-size:12px; color:var(--text)">
+            <input type="checkbox" name="bot_use_margin" {{if and .Settings .Settings.BotUseMargin}}checked{{end}}
+              style="width:14px;height:14px;accent-color:var(--green)">
+            Разрешить маржинальную торговлю
+          </label>
+          <div class="field-hint" style="margin-top:4px">Бот проверяет маржинальные атрибуты и учитывает уровень обеспечения. Требует подключённой маржи в T-Инвестиции.</div>
+        </div>
+
+        <button type="submit" class="btn primary" style="margin-top:8px">Сохранить настройки</button>
+      </form>
+    </div>
+
+    <!-- Bot Control -->
+    <div class="card" style="margin-bottom:20px">
+      <div style="font-size:11px; letter-spacing:.1em; color:var(--text); margin-bottom:16px">Торговый бот — управление</div>
+
+      {{if .BotRunning}}
+      <div id="bot-control" hx-get="/develop/bot/status" hx-trigger="every 10s" hx-swap="outerHTML" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--green);font-size:16px;animation:pulse 2s infinite">●</span>
+          <span style="font-size:12px;color:var(--green);font-weight:600">Бот работает</span>
+        </div>
+        <form hx-post="/develop/bot/stop" hx-target="#bot-control" hx-swap="outerHTML">
+          <button type="submit" class="btn danger" style="font-size:10px;padding:6px 12px">Остановить</button>
+        </form>
+      </div>
+      {{else}}
+      <div id="bot-control" hx-get="/develop/bot/status" hx-trigger="every 10s" hx-swap="outerHTML" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--muted);font-size:16px">○</span>
+          <span style="font-size:12px;color:var(--muted)">Бот остановлен</span>
+        </div>
+        <form hx-post="/develop/bot/start" hx-target="#bot-control" hx-swap="outerHTML">
+          <button type="submit" class="btn primary" style="font-size:10px;padding:6px 12px">Запустить бот</button>
+        </form>
+      </div>
+      {{end}}
+
+      <div style="font-size:10px; color:var(--muted); margin-top:14px; line-height:1.7">
+        Бот работает в фоне, запуская цикл анализа с заданным интервалом.<br>
+        Часы MOEX: пн–пт <b style="color:var(--subtext)">09:50–18:50</b> и <b style="color:var(--subtext)">19:05–23:50</b> МСК — вне сессии цикл пропускается.<br>
+        При каждой покупке автоматически выставляется стоп-лосс на уровне макс. допустимой потери.
+      </div>
+    </div>
+
+    <!-- Bot Logs -->
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px">
+        <div style="font-size:11px; letter-spacing:.1em; color:var(--text)">Журнал бота</div>
+        <button class="btn" style="font-size:10px; padding:4px 10px"
+          hx-post="/develop/bot/logs/clear" hx-target="#bot-logs" hx-swap="innerHTML">
+          Очистить
+        </button>
+      </div>
+      <div id="bot-logs"
+           style="max-height:280px; overflow-y:auto"
+           hx-get="/develop/bot/logs"
+           hx-trigger="load, every 5s"
+           hx-swap="innerHTML">
+        <div style="color:var(--muted);font-size:11px;padding:8px 0">Загрузка…</div>
+      </div>
+    </div>
+
+    <!-- Manual Analysis -->
+    <div class="card" style="margin-bottom:20px">
+      <div style="font-size:11px; letter-spacing:.1em; color:var(--text); margin-bottom:8px">Ручной анализ портфеля</div>
+      <div style="font-size:11px; color:var(--subtext); margin-bottom:16px">
+        Разовый запрос к Claude — анализирует текущий портфель и предлагает сделки.
+        {{if not .HasPortfolio}}<span style="color:var(--gold)"> ⚠ Нет данных о портфеле — обновите на главной.</span>{{end}}
+      </div>
+
+      <button
+        class="btn primary"
+        hx-post="/develop/analyze"
+        hx-target="#bot-results"
+        hx-swap="innerHTML"
+        hx-indicator="#analyze-ind"
+        id="analyze-ind">
+        <span class="spinner">⚙</span> Анализировать портфель
+      </button>
+
+      <div style="font-size:10px; color:var(--muted); margin-top:10px">
+        Количество в лотах (мин. торговая единица MOEX). Рыночные ордера исполняются немедленно.
+        Рекомендации не являются инвестиционным советом.
+      </div>
+
+      <div id="bot-results" style="margin-top:20px"></div>
+    </div>
+
+  </div>
+</main>
+
+<style>
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    margin-bottom: 6px;
+  }
+  .field input[type=password],
+  .field input[type=text],
+  .field input[type=number] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color .15s;
+    width: 100%;
+  }
+  .field input[type=number] { width: auto; }
+  .field input:focus { border-color: var(--green); }
+  .field input::placeholder { color: var(--muted); }
+  .field-hint { font-size: 10px; color: var(--muted); margin-top: 5px; }
+  .field-hint a { color: var(--green); text-decoration: none; }
+
+  .risk-opt {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .risk-opt:has(input:checked) { border-color: var(--green); }
+  .risk-opt input[type=radio] { display: none; }
+  .risk-label { font-size: 12px; font-weight: 600; }
+  .risk-label.low { color: var(--blue); }
+  .risk-label.medium { color: var(--gold); }
+  .risk-label.high { color: var(--red); }
+  .risk-desc { font-size: 10px; color: var(--muted); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .35; }
+  }
+
+  .rec-list { display: flex; flex-direction: column; }
+</style>
+{{end}}

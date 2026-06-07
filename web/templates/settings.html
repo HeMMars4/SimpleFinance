@@ -1,0 +1,392 @@
+{{template "base" .}}
+{{define "content"}}
+<nav>
+  <div class="nav-brand">Simple<span>Finance</span></div>
+  <div style="display:flex; align-items:center; gap:16px">
+    <a href="/">← Дашборд</a>
+    <a href="/logout">Выход</a>
+  </div>
+</nav>
+
+<main>
+  <div style="max-width:640px; margin:0 auto">
+    <div style="margin-bottom:32px">
+      <div style="font-family:var(--display); font-size:18px; font-weight:600; color:var(--green); margin-bottom:6px">Настройки</div>
+      <div style="font-size:11px; color:var(--subtext)">API ключи хранятся в базе данных и применяются при следующем обновлении.</div>
+    </div>
+
+    {{if .Success}}
+    <div class="error-banner" style="background:var(--green-dim); border-color:var(--green); color:var(--green); margin-bottom:24px">
+      ✓ Настройки сохранены
+    </div>
+    {{end}}
+    {{if .Error}}
+    <div class="error-banner" style="margin-bottom:24px">⚠ {{.Error}}</div>
+    {{end}}
+
+    <form method="POST" action="/settings">
+
+      <!-- T-Bank -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span class="source-badge badge-tbank">T-Bank</span>
+          Т-Банк (текущие счета)
+        </div>
+        <div class="field">
+          <label>Session ID</label>
+          <input type="text" name="tbank_session_id" value="{{index .Keys "tbank_session_id"}}" placeholder="sessionid из cookie t.me" autocomplete="off">
+          <div class="field-hint">Сессионный идентификатор для API Т-Банка</div>
+        </div>
+      </div>
+
+      <!-- T-Investments -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span class="source-badge" style="background:rgba(0,230,118,.1); color:var(--green); border:1px solid rgba(0,230,118,.2)">T-Invest</span>
+          Т-Инвестиции (брокерский счёт)
+        </div>
+        <div class="field">
+          <label>API токен</label>
+          <input type="text" name="tinvest_token" value="{{index .Keys "tinvest_token"}}" placeholder="t.…" autocomplete="off">
+          <div class="field-hint">Токен из раздела «Инвестиции → Настройки → Токен API» приложения Т-Банк</div>
+        </div>
+      </div>
+
+      <!-- Bybit -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span class="source-badge badge-bybit">Bybit</span>
+          Bybit (биржа)
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input type="text" name="bybit_api_key" value="{{index .Keys "bybit_api_key"}}" placeholder="API ключ" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>API Secret</label>
+          <input type="password" name="bybit_api_secret" value="{{index .Keys "bybit_api_secret"}}" placeholder="API секрет" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Bitcoin -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span class="source-badge badge-bitcoin">BTC</span>
+          Bitcoin адреса
+        </div>
+        <div class="field">
+          <label>Адреса (через запятую)</label>
+          <input type="text" name="btc_addresses" value="{{index .Keys "btc_addresses"}}" placeholder="bc1q…, bc1q…" autocomplete="off">
+          <div class="field-hint">Публичные Bitcoin адреса для отслеживания баланса</div>
+        </div>
+      </div>
+
+      <!-- Monero -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span class="source-badge badge-monero">XMR</span>
+          Monero (monero-wallet-rpc)
+        </div>
+        <div class="field">
+          <label>Адрес кошелька</label>
+          <input type="text" name="monero_address" value="{{index .Keys "monero_address"}}" placeholder="4..." autocomplete="off">
+          <div class="field-hint">Публичный адрес Monero (начинается с 4)</div>
+        </div>
+        <div class="field">
+          <label>View Key (приватный)</label>
+          <input type="password" name="monero_view_key" value="{{index .Keys "monero_view_key"}}" placeholder="64-символьный hex" autocomplete="off">
+          <div class="field-hint">Приватный ключ просмотра — позволяет видеть баланс, но не тратить средства</div>
+        </div>
+        <div class="field">
+          <label>RPC URL</label>
+          <input type="text" name="monero_rpc_url" value="{{index .Keys "monero_rpc_url"}}" placeholder="http://monero-wallet-rpc:18082/json_rpc" autocomplete="off">
+          <div class="field-hint">По умолчанию: http://monero-wallet-rpc:18082/json_rpc (Docker) или http://localhost:18082/json_rpc</div>
+        </div>
+        <div class="field">
+          <label>Restore Height (номер блока создания кошелька)</label>
+          <input type="text" name="monero_restore_height" value="{{index .Keys "monero_restore_height"}}" placeholder="например 3100000" autocomplete="off">
+          <div class="field-hint">Укажите блок, начиная с которого сканировать транзакции. Чем точнее — тем быстрее синхронизация. Оставьте 0 для сканирования с начала (очень медленно).</div>
+        </div>
+      </div>
+
+      <!-- Steam -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span class="source-badge badge-steam">Steam</span>
+          Steam инвентарь (торговая площадка)
+        </div>
+        <div class="field">
+          <label>SteamID64</label>
+          <input type="text" name="steam_id" value="{{index .Keys "steam_id"}}" placeholder="76561198..." autocomplete="off">
+          <div class="field-hint">Числовой Steam ID (17 цифр). Найти: steamid.io или steamcommunity.com/profiles/XXXXXXXX</div>
+        </div>
+        <div class="field">
+          <label>App ID игры</label>
+          <input type="text" name="steam_app_id" value="{{index .Keys "steam_app_id"}}" placeholder="730" autocomplete="off">
+          <div class="field-hint">730 = CS2, 570 = Dota 2, 440 = TF2. По умолчанию 730.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:32px">
+        <button type="submit" class="btn primary" style="width:100%; justify-content:center">Сохранить настройки</button>
+      </div>
+    </form>
+
+    <!-- Manual assets (cash) -->
+    <div style="margin-top:40px; margin-bottom:8px">
+      <div style="font-family:var(--display); font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px">Наличные и прочее</div>
+      <div style="font-size:11px; color:var(--subtext)">Ручные записи об активах (наличные, долги и т.п.).</div>
+    </div>
+
+    <div class="settings-group" style="margin-bottom:12px">
+      <div class="settings-group-title">Добавить актив</div>
+      <form method="POST" action="/settings/assets/manual/create">
+        <div style="display:grid; grid-template-columns:1fr 140px 80px; gap:10px; align-items:end">
+          <div class="field" style="margin-bottom:0">
+            <label>Название</label>
+            <input type="text" name="asset_name" placeholder="Наличные USD" required autocomplete="off">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Сумма</label>
+            <input type="number" name="asset_amount" placeholder="1000" step="any" min="0" required>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Валюта</label>
+            <input type="text" name="asset_currency" placeholder="RUB" maxlength="5" value="RUB">
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <button type="submit" class="btn primary">Добавить</button>
+        </div>
+      </form>
+    </div>
+
+    {{if .ManualAssets}}
+    <div class="settings-group" style="margin-bottom:16px">
+      <div class="settings-group-title">Текущие записи</div>
+      {{range .ManualAssets}}
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border)">
+        <div style="font-size:12px; color:var(--text)">
+          {{.Name}}
+          <span style="color:var(--subtext); margin-left:8px">{{.Amount}} {{.Currency}}</span>
+        </div>
+        <form method="POST" action="/settings/assets/manual/delete" style="margin:0">
+          <input type="hidden" name="id" value="{{.ID}}">
+          <button type="submit" class="btn danger" style="font-size:10px; padding:4px 10px" onclick="return confirm('Удалить запись?')">Удалить</button>
+        </form>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+
+    <!-- Asset visibility filters -->
+    <div style="margin-top:40px; margin-bottom:8px">
+      <div style="font-family:var(--display); font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px">Фильтрация активов</div>
+      <div style="font-size:11px; color:var(--subtext)">Скрывайте ненужные активы с дашборда (данные сохраняются).</div>
+    </div>
+
+    {{if .AllAssets}}
+    <div class="settings-group" style="margin-bottom:16px">
+      {{range .AllAssets}}
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border)">
+        <div style="display:flex; align-items:center; gap:10px">
+          <span class="source-badge badge-{{sourceBase .Source}}">{{sourceBase .Source}}</span>
+          <span style="font-size:12px;" class="{{if isHidden $.HiddenAssets .Source .Name}}asset-hidden{{end}}">{{.Name}}</span>
+        </div>
+        <form method="POST" action="/settings/assets/toggle" style="margin:0">
+          <input type="hidden" name="asset_key" value="{{assetKey .Source .Name}}">
+          {{if isHidden $.HiddenAssets .Source .Name}}
+          <input type="hidden" name="hidden" value="false">
+          <button type="submit" class="btn" style="font-size:10px; padding:4px 10px; color:var(--subtext)">Показать</button>
+          {{else}}
+          <input type="hidden" name="hidden" value="true">
+          <button type="submit" class="btn" style="font-size:10px; padding:4px 10px">Скрыть</button>
+          {{end}}
+        </form>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="settings-group" style="margin-bottom:16px">
+      <div style="font-size:12px; color:var(--muted)">Нет активов. Обновите данные на главной странице.</div>
+    </div>
+    {{end}}
+
+    <!-- Extra integration instances -->
+    <div style="margin-top:40px; margin-bottom:8px">
+      <div style="font-family:var(--display); font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px">Дополнительные источники</div>
+      <div style="font-size:11px; color:var(--subtext)">Ещё один Steam инвентарь, кошелёк Monero или Bitcoin. Будут обновляться вместе с основными.</div>
+    </div>
+
+    {{if .ExtraInstances}}
+    <div class="settings-group" style="margin-bottom:12px">
+      <div class="settings-group-title">Активные дополнительные источники</div>
+      {{range .ExtraInstances}}
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border)">
+        <div>
+          <span class="source-badge badge-{{.Type}}">{{.Type}}</span>
+          <span style="font-size:12px; color:var(--text); margin-left:8px">{{.Label}}</span>
+        </div>
+        <form method="POST" action="/settings/integrations/delete" style="margin:0">
+          <input type="hidden" name="id" value="{{.ID}}">
+          <button type="submit" class="btn danger" style="font-size:10px; padding:4px 10px" onclick="return confirm('Удалить источник?')">Удалить</button>
+        </form>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+
+    <div class="settings-group" style="margin-bottom:16px">
+      <div class="settings-group-title">Добавить источник</div>
+      <form method="POST" action="/settings/integrations/create">
+        <div class="field">
+          <label>Тип</label>
+          <select name="inst_type" id="inst-type" onchange="updateInstFields()" style="background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:9px 12px; color:var(--text); font-family:var(--mono); font-size:12px; width:100%; outline:none">
+            <option value="">— выберите —</option>
+            <option value="steam">Steam инвентарь</option>
+            <option value="monero">Monero кошелёк</option>
+            <option value="btc">Bitcoin адреса</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Название (отображается на дашборде)</label>
+          <input type="text" name="inst_label" placeholder="Мой второй Steam" autocomplete="off">
+        </div>
+
+        <div id="inst-steam" style="display:none">
+          <div class="field">
+            <label>SteamID64</label>
+            <input type="text" name="inst_steam_id" placeholder="76561198..." autocomplete="off">
+          </div>
+          <div class="field">
+            <label>App ID (730 = CS2)</label>
+            <input type="text" name="inst_app_id" placeholder="730" value="730" autocomplete="off">
+          </div>
+        </div>
+
+        <div id="inst-monero" style="display:none">
+          <div class="field">
+            <label>Адрес Monero</label>
+            <input type="text" name="inst_monero_address" placeholder="4..." autocomplete="off">
+          </div>
+          <div class="field">
+            <label>View Key</label>
+            <input type="password" name="inst_monero_view_key" placeholder="64-символьный hex" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Restore Height</label>
+            <input type="text" name="inst_monero_restore_height" placeholder="3100000" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>RPC URL</label>
+            <input type="text" name="inst_monero_rpc_url" placeholder="http://monero-wallet-rpc:18082/json_rpc" autocomplete="off">
+          </div>
+        </div>
+
+        <div id="inst-btc" style="display:none">
+          <div class="field">
+            <label>Bitcoin адреса (через запятую)</label>
+            <input type="text" name="inst_btc_addresses" placeholder="bc1q…, bc1q…" autocomplete="off">
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <button type="submit" class="btn primary">Добавить источник</button>
+        </div>
+      </form>
+    </div>
+
+
+    <!-- Change own password -->
+    <div class="settings-group" style="margin-bottom:16px">
+      <div class="settings-group-title">Сменить пароль ({{.CurrentUser}})</div>
+      <form method="POST" action="/settings/user/password">
+        <div class="field">
+          <label>Текущий пароль</label>
+          <input type="password" name="old_password" placeholder="••••••" autocomplete="current-password" required>
+        </div>
+        <div class="field">
+          <label>Новый пароль (мин. 6 символов)</label>
+          <input type="password" name="new_password" placeholder="••••••" autocomplete="new-password" required>
+        </div>
+        <div style="margin-top:12px">
+          <button type="submit" class="btn primary">Изменить пароль</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</main>
+
+<style>
+  .settings-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .settings-group-title {
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .field {
+    margin-bottom: 14px;
+  }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .field input:focus { border-color: var(--green); }
+  .field input::placeholder { color: var(--muted); }
+  .field-hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+  .asset-hidden { color: var(--muted); text-decoration: line-through; }
+  .field input[type=number], .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color .15s;
+  }
+</style>
+<script>
+function updateInstFields() {
+  var t = document.getElementById('inst-type').value;
+  ['steam','monero','btc'].forEach(function(s) {
+    var el = document.getElementById('inst-' + s);
+    if (el) el.style.display = (t === s) ? 'block' : 'none';
+  });
+}
+</script>
+{{end}}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 
 // Uses mempool.space public API — no auth required
 const mempoolURL = "https://mempool.space/api/address/%s"
-const priceURL = "https://mempool.space/api/v1/prices"
 
 type Client struct {
 	addresses []string
@@ -38,20 +38,12 @@ type addressInfo struct {
 	} `json:"mempool_stats"`
 }
 
-type priceResponse struct {
-	USD float64 `json:"USD"`
-}
-
-func (c *Client) FetchAssets(ctx context.Context, usdRUBRate float64) ([]models.Asset, error) {
+func (c *Client) FetchAssets(ctx context.Context, btcRUBRate float64) ([]models.Asset, error) {
 	if len(c.addresses) == 0 {
 		return nil, nil
 	}
-
-	btcUSD, err := c.fetchBTCPrice(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("btc price: %w", err)
-	}
-	btcRUB := btcUSD * usdRUBRate
+	btcRUB := btcRUBRate
+	slog.Debug("bitcoin rates", "btcRUB", btcRUB)
 
 	var assets []models.Asset
 	for _, addr := range c.addresses {
@@ -101,23 +93,4 @@ func (c *Client) fetchAddress(ctx context.Context, addr string) (*addressInfo, e
 
 	var info addressInfo
 	return &info, json.Unmarshal(body, &info)
-}
-
-func (c *Client) fetchBTCPrice(ctx context.Context) (float64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, priceURL, nil)
-	if err != nil {
-		return 0, err
-	}
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-
-	var p priceResponse
-	if err := json.Unmarshal(body, &p); err != nil {
-		return 0, err
-	}
-	return p.USD, nil
 }

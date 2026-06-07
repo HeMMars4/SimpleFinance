@@ -12,31 +12,52 @@
   </div>
   <div class="card">
     <div class="card-label">Банк & сбережения</div>
-    <div class="card-value neutral">
-      {{$bankSum := 0.0}}
-      {{range .BankAssets}}{{$bankSum = (printf "%.2f" (add $bankSum .AmountRUB))}}{{end}}
-      {{fmtRUB .TotalRUB}}
-    </div>
+    <div class="card-value neutral">{{fmtRUB .BankTotalRUB}}</div>
   </div>
   <div class="card">
-    <div class="card-label">Крипто</div>
-    <div class="card-value neutral">
-      {{$cSum := 0.0}}
-      {{range .CryptoAssets}}
-        {{$cSum = $cSum}}
-      {{end}}
-      <!-- computed server-side in Go, show subset -->
-      {{$c := 0.0}}
-      {{range .CryptoAssets}}{{end}}
-      {{/* We'll just show count for now */}}
-      {{len .CryptoAssets}} активов
-    </div>
+    <div class="card-label">Инвестиции</div>
+    <div class="card-value neutral">{{fmtRUB .InvestTotalRUB}}</div>
   </div>
 </div>
 
+<!-- Rates + timestamp -->
+<div class="rates-strip">
+  {{if index .Rates "USD"}}<span class="rate-item"><span class="rate-cur">USD</span> {{fmtRUB (index .Rates "USD")}}</span>{{end}}
+  {{if index .Rates "BTC"}}<span class="rate-item"><span class="rate-cur">BTC</span> {{fmtRUB (index .Rates "BTC")}}</span>{{end}}
+  {{if index .Rates "XMR"}}<span class="rate-item"><span class="rate-cur">XMR</span> {{fmtRUB (index .Rates "XMR")}}</span>{{end}}
+  <span class="rate-item" style="margin-left:auto"><span class="rate-cur">обновлено</span> {{.LastUpdated.Format "02.01 15:04"}}</span>
+</div>
+
+<!-- Portfolio breakdown + donut chart -->
+{{if .ChartData}}
+<div style="display:grid; grid-template-columns:1fr 220px; gap:24px; margin-bottom:32px; align-items:start">
+  <div>
+    <div class="section-title">Распределение по классам</div>
+    {{if .BankTotalRUB}}
+    <div class="breakdown-row"><span class="breakdown-dot" style="background:#448aff"></span><span>Банк</span><span class="breakdown-val">{{fmtRUB .BankTotalRUB}}</span></div>
+    {{end}}
+    {{if .InvestTotalRUB}}
+    <div class="breakdown-row"><span class="breakdown-dot" style="background:#00e676"></span><span>Инвестиции</span><span class="breakdown-val">{{fmtRUB .InvestTotalRUB}}</span></div>
+    {{end}}
+    {{if .CryptoTotalRUB}}
+    <div class="breakdown-row"><span class="breakdown-dot" style="background:#f7931a"></span><span>Крипто</span><span class="breakdown-val">{{fmtRUB .CryptoTotalRUB}}</span></div>
+    {{end}}
+    {{if .SteamTotalRUB}}
+    <div class="breakdown-row"><span class="breakdown-dot" style="background:#66c0f4"></span><span>Steam</span><span class="breakdown-val">{{fmtRUB .SteamTotalRUB}}</span></div>
+    {{end}}
+    {{if .ManualTotalRUB}}
+    <div class="breakdown-row"><span class="breakdown-dot" style="background:#ffc107"></span><span>Наличные</span><span class="breakdown-val">{{fmtRUB .ManualTotalRUB}}</span></div>
+    {{end}}
+  </div>
+  <div style="display:flex; flex-direction:column; align-items:center">
+    <canvas id="assetChart" width="180" height="180" data-chart='{{.ChartData}}'></canvas>
+  </div>
+</div>
+{{end}}
+
 <!-- Bank assets -->
 {{if .BankAssets}}
-<div class="section-title">Банковские счета — T-Bank</div>
+<div class="section-title">Банковские счета</div>
 <table class="asset-table">
   <thead>
     <tr>
@@ -50,7 +71,7 @@
   {{range .BankAssets}}
   <tr>
     <td>
-      <span class="source-badge badge-{{.Source}}">{{.Source}}</span>
+      <span class="source-badge badge-{{sourceBase .Source}}">{{sourceBase .Source}}</span>
       &nbsp;{{.Name}}
     </td>
     <td>
@@ -63,6 +84,100 @@
   {{end}}
   </tbody>
 </table>
+{{end}}
+
+<!-- Invest assets -->
+{{if .InvestAssets}}
+<div class="section-title">Инвестиции — Т-Инвестиции</div>
+<div class="invest-accounts">
+{{range .InvestAssets}}
+  {{$positions := index $.InvestPositions .Name}}
+  <details class="invest-card">
+    <summary class="invest-summary">
+      <div class="invest-summary-left">
+        <span class="source-badge badge-tinvest">T-Invest</span>
+        <span class="invest-name">{{.Name}}</span>
+      </div>
+      <div class="invest-summary-right">
+        <span class="amount-rub">{{fmtRUB .AmountRUB}}</span>
+        <span class="invest-arrow">▸</span>
+      </div>
+    </summary>
+    {{if $positions}}
+    <div class="invest-positions">
+      <table class="asset-table" style="margin-bottom:0">
+        <thead>
+          <tr>
+            <th>Тикер</th>
+            <th>Тип</th>
+            <th>Кол-во</th>
+            <th>Цена</th>
+            <th>Стоимость</th>
+          </tr>
+        </thead>
+        <tbody>
+        {{range $positions}}
+        <tr>
+          <td><span class="ticker-tag">{{.Ticker}}</span></td>
+          <td><span class="type-tag">{{fmtInstrumentType .InstrumentType}}</span></td>
+          <td><span class="amount-raw">{{fmtFloat .Quantity}}</span></td>
+          <td><span class="amount-raw">{{fmtRUB .PriceRUB}}</span></td>
+          <td><span class="amount-rub">{{fmtRUB .ValueRUB}}</span></td>
+        </tr>
+        {{end}}
+        </tbody>
+      </table>
+    </div>
+    {{end}}
+  </details>
+{{end}}
+</div>
+{{end}}
+
+<!-- Steam inventory -->
+{{if .SteamAssets}}
+<div class="section-title">Steam инвентарь</div>
+<div class="invest-accounts">
+{{range .SteamAssets}}
+  {{$items := index $.SteamItems .Name}}
+  <details class="invest-card">
+    <summary class="invest-summary">
+      <div class="invest-summary-left">
+        <span class="source-badge badge-steam">Steam</span>
+        <span class="invest-name">{{.Name}}</span>
+      </div>
+      <div class="invest-summary-right">
+        <span class="amount-rub">{{fmtRUB .AmountRUB}}</span>
+        <span class="invest-arrow">▸</span>
+      </div>
+    </summary>
+    {{if $items}}
+    <div class="invest-positions">
+      <table class="asset-table" style="margin-bottom:0">
+        <thead>
+          <tr>
+            <th>Предмет</th>
+            <th>Кол-во</th>
+            <th>Цена</th>
+            <th>Стоимость</th>
+          </tr>
+        </thead>
+        <tbody>
+        {{range $items}}
+        <tr>
+          <td style="color:var(--text); font-size:12px">{{.Name}}</td>
+          <td><span class="amount-raw">{{.Quantity}}</span></td>
+          <td><span class="amount-raw">{{fmtRUB .PriceRUB}}</span></td>
+          <td><span class="amount-rub">{{fmtRUB .ValueRUB}}</span></td>
+        </tr>
+        {{end}}
+        </tbody>
+      </table>
+    </div>
+    {{end}}
+  </details>
+{{end}}
+</div>
 {{end}}
 
 <!-- Crypto assets -->
@@ -81,21 +196,45 @@
   {{range .CryptoAssets}}
   <tr>
     <td>
-      <span class="source-badge badge-{{.Source}}">{{.Currency}}</span>
+      <span class="source-badge badge-{{sourceBase .Source}}">{{.Currency}}</span>
       &nbsp;{{.Name}}
     </td>
-    <td>
-      <span class="amount-raw">{{fmtCrypto .AmountRaw .Currency}}</span>
-    </td>
+    <td><span class="amount-raw">{{fmtCrypto .AmountRaw .Currency}}</span></td>
     <td><span class="amount-rub">{{fmtRUB .AmountRUB}}</span></td>
-    <td><span class="type-tag">{{.Source}}</span></td>
+    <td><span class="type-tag">{{sourceBase .Source}}</span></td>
   </tr>
   {{end}}
   </tbody>
 </table>
 {{end}}
 
-<!-- Credit cards — separate section -->
+<!-- Manual assets (cash) -->
+{{if .ManualAssets}}
+<div class="section-title">Наличные</div>
+<table class="asset-table">
+  <thead>
+    <tr>
+      <th>Название</th>
+      <th>Сумма</th>
+      <th>В рублях</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .ManualAssets}}
+  <tr>
+    <td>
+      <span class="source-badge badge-manual">нал</span>
+      &nbsp;{{.Name}}
+    </td>
+    <td><span class="amount-raw">{{fmtFloat .AmountRaw}} {{.Currency}}</span></td>
+    <td><span class="amount-rub">{{fmtRUB .AmountRUB}}</span></td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}
+
+<!-- Credit cards -->
 {{if .CreditCards}}
 <div class="credit-section">
   <div class="section-title">Кредитные карты (не в общем итоге)</div>
@@ -111,7 +250,7 @@
     {{range .CreditCards}}
     <tr>
       <td>
-        <span class="source-badge badge-{{.Source}}">{{.Source}}</span>
+        <span class="source-badge badge-{{sourceBase .Source}}">{{sourceBase .Source}}</span>
         &nbsp;{{.Name}}
       </td>
       <td><span class="amount-rub">{{fmtFloat .AmountRaw}} {{.Currency}}</span></td>
@@ -126,5 +265,74 @@
 </div>
 {{end}}
 
-<div class="timestamp">Обновлено: {{.LastUpdated.Format "02.01.2006 15:04:05"}}</div>
+<style>
+  .invest-accounts { margin-bottom: 32px; display: flex; flex-direction: column; gap: 8px; }
+  .invest-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .invest-card[open] { border-color: rgba(0,230,118,.3); }
+  .invest-summary { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; list-style: none; user-select: none; }
+  .invest-summary::-webkit-details-marker { display: none; }
+  .invest-summary:hover { background: rgba(255,255,255,.02); }
+  .invest-summary-left { display: flex; align-items: center; gap: 10px; }
+  .invest-summary-right { display: flex; align-items: center; gap: 10px; }
+  .invest-name { font-size: 13px; color: var(--text); }
+  .invest-arrow { color: var(--subtext); font-size: 10px; transition: transform .15s; }
+  .invest-card[open] .invest-arrow { transform: rotate(90deg); }
+  .invest-positions { border-top: 1px solid var(--border); padding: 8px 0; }
+  .ticker-tag { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--green); letter-spacing: .05em; }
+
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(30,35,41,.5);
+    font-size: 12px;
+    color: var(--subtext);
+  }
+  .breakdown-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .breakdown-val { margin-left: auto; color: var(--text); font-weight: 600; }
+</style>
+
+<script>
+(function() {
+  var canvas = document.getElementById('assetChart');
+  if (!canvas) return;
+  var raw = canvas.getAttribute('data-chart');
+  if (!raw) return;
+  var segments;
+  try { segments = JSON.parse(raw); } catch(e) { return; }
+  if (!segments || !segments.length) return;
+
+  var ctx = canvas.getContext('2d');
+  var total = segments.reduce(function(s, seg) { return s + seg.value; }, 0);
+  if (total <= 0) return;
+
+  var cx = 90, cy = 90, outerR = 82, innerR = 50;
+  var startAngle = -Math.PI / 2;
+
+  segments.forEach(function(seg) {
+    var sweep = (seg.value / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outerR, startAngle, startAngle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    startAngle += sweep;
+  });
+
+  // Donut hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#111418';
+  ctx.fill();
+
+  // Percentage label in center
+  ctx.fillStyle = '#e8eaf0';
+  ctx.font = '600 11px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(segments.length + ' кл.', cx, cy);
+})();
+</script>
 {{end}}

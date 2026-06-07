@@ -7,16 +7,19 @@ import (
 )
 
 type Config struct {
-	Port           string
-	Secret         string
-	AdminUsername  string
-	AdminPassword  string
-	DB             DBConfig
-	TBank          TBankConfig
-	Bybit          BybitConfig
-	BTCAddresses   []string
-	XMRAddresses   []string
-	ManualUSDRUB   float64
+	Port         string
+	TLSCert      string
+	TLSKey       string
+	Secret       string
+	DB           DBConfig
+	TBank         TBankConfig
+	TInvest       TInvestConfig
+	Bybit         BybitConfig
+	BTCAddresses  []string
+	XMRAddresses  []string
+	Monero        MoneroConfig
+	Steam         SteamConfig
+	ManualUSDRUB  float64
 }
 
 type DBConfig struct {
@@ -31,9 +34,21 @@ type TBankConfig struct {
 	SessionID string
 }
 
+type TInvestConfig struct {
+	Token string
+}
+
 type BybitConfig struct {
 	APIKey    string
 	APISecret string
+}
+
+type MoneroConfig struct {
+	RPCURL string
+}
+
+type SteamConfig struct {
+	SteamID string
 }
 
 func Load() *Config {
@@ -52,10 +67,10 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:          getEnv("APP_PORT", "8080"),
-		Secret:        getEnv("APP_SECRET", "dev-secret-change-me"),
-		AdminUsername: getEnv("ADMIN_USERNAME", "admin"),
-		AdminPassword: getEnv("ADMIN_PASSWORD", "admin"),
+		Port:    getEnv("APP_PORT", "8081"),
+		TLSCert: getEnv("TLS_CERT", ""),
+		TLSKey:  getEnv("TLS_KEY", ""),
+		Secret:  getEnv("APP_SECRET", "dev-secret-change-me"),
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
@@ -66,12 +81,21 @@ func Load() *Config {
 		TBank: TBankConfig{
 			SessionID: getEnv("TBANK_SESSION_ID", ""),
 		},
+		TInvest: TInvestConfig{
+			Token: getEnv("TINVEST_TOKEN", ""),
+		},
 		Bybit: BybitConfig{
 			APIKey:    getEnv("BYBIT_API_KEY", ""),
 			APISecret: getEnv("BYBIT_API_SECRET", ""),
 		},
 		BTCAddresses: btcAddresses,
 		XMRAddresses: xmrAddresses,
+		Monero: MoneroConfig{
+			RPCURL: getEnv("MONERO_RPC_URL", ""),
+		},
+		Steam: SteamConfig{
+			SteamID: getEnv("STEAM_ID", ""),
+		},
 		ManualUSDRUB: usdRub,
 	}
 }

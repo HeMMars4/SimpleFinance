@@ -2,18 +2,45 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - /root/cert/muinfra.ru:/certs:ro
     env_file:
       - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - MONERO_RPC_URL=http://host.docker.internal:18082/json_rpc
     depends_on:
       db:
         condition: service_healthy
+      monero-wallet-rpc:
+        condition: service_started
     restart: unless-stopped
+
+  monero-wallet-rpc:
+    build:
+      context: ./docker/monero-wallet-rpc
+      args:
+        MONERO_VERSION: "0.18.3.4"
+    restart: unless-stopped
+    network_mode: host
     volumes:
-      - ./web:/app/web  # hot-reload templates without rebuild
+      - ${MONERO_WALLET_DIR:-./monero-wallet}:/wallet
+    command: >
+      --wallet-dir /wallet
+      --rpc-bind-ip 0.0.0.0
+      --rpc-bind-port 18082
+      --confirm-external-bind
+      --disable-rpc-login
+      --daemon-host ${MONERO_DAEMON_HOST:-xmr-node.cakewallet.com}
+      --daemon-port ${MONERO_DAEMON_PORT:-18081}
+      --trusted-daemon
 
   db:
     image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}

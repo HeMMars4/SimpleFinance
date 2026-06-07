@@ -6,10 +6,48 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/HeMMars4/simple-finance/internal/models"
 )
+
+// normCurrency maps ISO 4217 numeric codes to alphabetic codes.
+// T-Bank API sometimes returns numeric strCode like "643" instead of "RUB".
+func normCurrency(c *currency) string {
+	if c == nil {
+		return "RUB"
+	}
+	switch c.Code {
+	case 643:
+		return "RUB"
+	case 840:
+		return "USD"
+	case 978:
+		return "EUR"
+	case 156:
+		return "CNY"
+	case 826:
+		return "GBP"
+	}
+	// StrCode is "643" when the API returns the numeric code — skip those
+	if c.StrCode != "" && len(c.StrCode) == 3 && !isAllDigits(c.StrCode) {
+		return strings.ToUpper(c.StrCode)
+	}
+	if c.Name != "" && len(c.Name) == 3 {
+		return strings.ToUpper(c.Name)
+	}
+	return "RUB"
+}
+
+func isAllDigits(s string) bool {
+	for _, ch := range s {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
 
 const accountsURL = "https://www.tbank.ru/api/common/v1/accounts_light_ib?appName=supreme&appVersion=0.0.1&platform=web&origin=web%%2Cib5%%2Cplatform&sessionid=%s"
 
@@ -31,6 +69,10 @@ type apiResponse struct {
 	Payload    []account `json:"payload"`
 }
 
+type brand struct {
+	LogoFile string `json:"logoFile"`
+}
+
 type account struct {
 	ID          string      `json:"id"`
 	Name        string      `json:"name"`
@@ -40,6 +82,7 @@ type account struct {
 	CreditLimit *moneyField `json:"creditLimit"`
 	DebtAmount  *moneyField `json:"debtAmount"`
 	Currency    *currency   `json:"currency"`
+	Brand       *brand      `json:"brand"`
 }
 
 type moneyField struct {
@@ -109,10 +152,17 @@ func mapAccounts(accounts []account, usdRUBRate float64) []models.Asset {
 			assetType = models.AssetTypeBankCurrent
 		}
 
-		currCode := "RUB"
-		if a.Currency != nil && a.Currency.StrCode != "" {
-			currCode = a.Currency.StrCode
+		// Derive source: OpenBanking accounts have brand info for the actual bank
+		source := "tbank"
+		if a.AccountType == "OpenBankingCurrentAccount" && a.Brand != nil {
+			logo := strings.ToLower(a.Brand.LogoFile)
+			switch {
+			case strings.Contains(logo, "sber"):
+				source = "sber"
+			}
 		}
+
+		currCode := normCurrency(a.Currency)
 
 		amountRaw := a.MoneyAmount.Value
 
@@ -138,7 +188,7 @@ func mapAccounts(accounts []account, usdRUBRate float64) []models.Asset {
 		}
 
 		result = append(result, models.Asset{
-			Source:    "tbank",
+			Source:    source,
 			Name:      a.Name,
 			Type:      assetType,
 			AmountRaw: amountRaw,

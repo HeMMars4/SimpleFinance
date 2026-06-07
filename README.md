@@ -21,9 +21,9 @@ T-Bank(частично, с ограничениями и ручным ввод�
     MONERO_DAEMON_PORT=18081
   ```
   3. Запуск
-  ```
+  ``` 
     docker compose up -d
-    ```
+  ```
   4. Открой http://your-vps-ip:<порт из .env>
 
 ## Обновление T-Bank сессии

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/yourname/simple-finance/internal/auth"
-	"github.com/yourname/simple-finance/internal/storage"
+	"github.com/HeMMars4/simple-finance/internal/auth"
+	"github.com/HeMMars4/simple-finance/internal/storage"
 )
 
 type Handler struct {

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourname/simple-finance/internal/models"
+	"github.com/HeMMars4/simple-finance/internal/models"
 )
 
 // Uses mempool.space public API — no auth required

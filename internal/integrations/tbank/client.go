@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourname/simple-finance/internal/models"
+	"github.com/HeMMars4/simple-finance/internal/models"
 )
 
 const accountsURL = "https://www.tbank.ru/api/common/v1/accounts_light_ib?appName=supreme&appVersion=0.0.1&platform=web&origin=web%%2Cib5%%2Cplatform&sessionid=%s"

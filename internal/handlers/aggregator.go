@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/yourname/simple-finance/config"
-	"github.com/yourname/simple-finance/internal/integrations/bitcoin"
-	"github.com/yourname/simple-finance/internal/integrations/bybit"
-	"github.com/yourname/simple-finance/internal/integrations/monero"
-	"github.com/yourname/simple-finance/internal/integrations/tbank"
-	"github.com/yourname/simple-finance/internal/models"
-	"github.com/yourname/simple-finance/internal/storage"
+	"github.com/HeMMars4/simple-finance/config"
+	"github.com/HeMMars4/simple-finance/internal/integrations/bitcoin"
+	"github.com/HeMMars4/simple-finance/internal/integrations/bybit"
+	"github.com/HeMMars4/simple-finance/internal/integrations/monero"
+	"github.com/HeMMars4/simple-finance/internal/integrations/tbank"
+	"github.com/HeMMars4/simple-finance/internal/models"
+	"github.com/HeMMars4/simple-finance/internal/storage"
 )
 
 type Aggregator struct {

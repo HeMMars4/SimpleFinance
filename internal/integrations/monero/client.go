@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourname/simple-finance/internal/models"
+	"github.com/HeMMars4/simple-finance/internal/models"
 )
 
 type Client struct {

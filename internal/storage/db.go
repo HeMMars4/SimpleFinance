@@ -7,8 +7,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/yourname/simple-finance/config"
-	"github.com/yourname/simple-finance/internal/models"
+	"github.com/HeMMars4/simple-finance/config"
+	"github.com/HeMMars4/simple-finance/internal/models"
 )
 
 type DB struct {

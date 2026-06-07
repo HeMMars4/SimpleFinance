@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/yourname/simple-finance/internal/models"
+	"github.com/HeMMars4/simple-finance/internal/models"
 )
 
 const baseURL = "https://api.bybit.com"

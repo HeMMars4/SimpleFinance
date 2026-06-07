@@ -1,63 +1,42 @@
 # Simple Finance
 
-Personal asset tracker: T-Bank, Bybit Spot, Bitcoin cold wallets, Monero.
+Персональный агретатор финансовых сервисов и площадок, для просмотра всех ваших активов на данный момент подключены:
+T-Bank(частично, с ограничениями и ручным вводом токена, из-за отсутствия у банков в РФ OpenApi), Bybit, Bitcoin cold wallets, Monero, инвентарь Steam, Т-Инвестиций. Также реализован AI анализ ваших активов(пока только РФ), и предложение от AI. В тестировании сейчас торговый бот под Т-Инвестиции, который запускает демона и торгует за вас по усмотрению ИИ
 
 ## Быстрый старт
+# У вас должен быть установлен  Docker
+# 1. git clone https://github.com/HeMMars4/SimpleFinance.git
+# 2. Создайте .env c параметрами 
+DB_USER="ИМЯ ПОЛЬЗОВАТЕЛЯ"
+DB_PASSWORD="ПАРОЛЬ"
+DB_NAME=simple_finance
+DB_HOST=db
+DB_PORT=5432
+APP_PORT=8081(можно любой внешний порт)
+TLS_CERT=/certs/fullchain.pem(тут по желанию, но лучше сертификаты поставить)
+TLS_KEY=/certs/privkey.pem
 
-```bash
-# 1. Скопируй .env
-cp .env.example .env
+APP_SECRET=(тут любое значение больше 32 символов)
 
-# 2. Заполни .env:
-#    - ADMIN_USERNAME / ADMIN_PASSWORD  — логин в веб-интерфейс
-#    - TBANK_SESSION_ID                 — сессия из Burp/браузера
-#    - BYBIT_API_KEY / BYBIT_API_SECRET — read-only ключ с Bybit
-#    - BTC_ADDRESSES                    — адреса через запятую
-#    - APP_SECRET                       — любая случайная строка 32+ символов
+MONERO_DAEMON_HOST=xmr-node.cakewallet.com
+MONERO_DAEMON_PORT=18081
+
 
 # 3. Запуск
 docker compose up -d
 
-# Открой http://your-vps-ip:8080
+# 4. Открой http://your-vps-ip:<порт из .env>
 ```
 
 ## Обновление T-Bank сессии
 
-Сессия T-Bank живёт ~24 часа. Когда протухнет:
+Сессионный токен ручки T-Bank живёт ~10 минут или при обновлении главной странице с балансами. Чтобы его получить, нужно: 
+1. Авторизоваться в онлайн банке [www.tbank.ru](https://www.tbank.ru). 
+2. Зайти CTRL+SHIFT+I и перейти в Хранилище,
+3. Найти psid 
+5. Скопировать от туда значение в настройки панели и запустить обновление, данные все подтянутся
 
-1. Открой [www.tbank.ru](https://www.tbank.ru) в браузере
-2. Перехвати запрос к `/api/common/v1/accounts_light_ib` (DevTools → Network)
-3. Скопируй значение `sessionid=` из URL
-4. Обнови `.env`:
-   ```
-   TBANK_SESSION_ID=новый_session_id
-   ```
-5. Перезапусти: `docker compose restart app`
-
-> Планируется: автообновление через cookie refresh endpoint.
-
-## Структура проекта
-
-```
-cmd/server/         — точка входа
-config/             — загрузка .env
-internal/
-  auth/             — JWT авторизация
-  handlers/         — HTTP хендлеры + агрегатор
-  integrations/
-    tbank/          — T-Bank API (session-based)
-    bybit/          — Bybit v5 API (HMAC signed)
-    bitcoin/        — mempool.space (публичный, без ключей)
-    monero/         — monero-wallet-rpc (опционально)
-  models/           — доменные модели
-  storage/          — PostgreSQL через sqlx
-migrations/         — SQL миграции (goose)
-web/templates/      — HTML + HTMX
-```
-
-## Добавление Steam
-
-Steam интеграция планируется следующим шагом:
-- API: `https://api.steampowered.com/IEconService/GetInventory/v1/`
-- Нужен: Steam API Key + SteamID64
-- Цены: через Steam Market Price Overview API
+## Планы на будущее
+Запустить торговых ботов на Bybit
+Cделать автоматизацию сессионых токенов Т-Банка
+Подключить другие банки(частично,сейчас если у вас в Т-Банке подключено отображение сторонних банковских карт, то они тоже будут тут отображаться, по токену)

@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleFinance — Агрегатор финансов</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Unbounded:wght@300;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0a0c0f;
+      --surface:  #111418;
+      --surface2: #161b22;
+      --border:   #1e2329;
+      --muted:    #3d4451;
+      --text:     #e8eaf0;
+      --subtext:  #7a8499;
+      --green:    #00e676;
+      --green-dim:#004d25;
+      --red:      #ff5252;
+      --gold:     #ffc107;
+      --blue:     #448aff;
+      --mono:     'JetBrains Mono', monospace;
+      --display:  'Unbounded', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,230,118,.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,230,118,.012) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(10,12,15,.92);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-brand {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: .04em;
+      color: var(--green);
+      text-decoration: none;
+    }
+    .nav-brand span { color: var(--subtext); font-weight: 300; }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-link {
+      color: var(--subtext);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all .15s;
+    }
+    .nav-link:hover { color: var(--text); border-color: var(--border); }
+
+    .nav-btn {
+      color: var(--green);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 7px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--green);
+      background: var(--green-dim);
+      transition: all .15s;
+      font-family: var(--mono);
+    }
+    .nav-btn:hover { background: rgba(0,230,118,.2); }
+
+    /* ─── HERO ─── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 24px 60px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,230,118,.3);
+      background: rgba(0,230,118,.06);
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 32px;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+
+    .hero-title {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(42px, 8vw, 88px);
+      line-height: 1;
+      letter-spacing: -.02em;
+      margin-bottom: 8px;
+    }
+    .hero-title .green { color: var(--green); }
+    .hero-title .dim { color: var(--subtext); font-weight: 300; }
+
+    .hero-subtitle {
+      font-family: var(--display);
+      font-weight: 300;
+      font-size: clamp(13px, 2vw, 18px);
+      color: var(--subtext);
+      letter-spacing: .08em;
+      margin-bottom: 28px;
+    }
+
+    .hero-desc {
+      max-width: 580px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--subtext);
+      margin-bottom: 48px;
+    }
+    .hero-desc strong { color: var(--text); }
+
+    .hero-cta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 72px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: var(--green-dim);
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      color: var(--green);
+      text-decoration: none;
+      font-family: var(--display);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      transition: all .15s;
+    }
+    .btn-primary:hover { background: rgba(0,230,118,.2); transform: translateY(-1px); }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      transition: all .15s;
+    }
+    .btn-outline:hover { border-color: var(--subtext); transform: translateY(-1px); }
+
+    /* ─── STATS ─── */
+    .stats-row {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 680px;
+      width: 100%;
+    }
+    .stat-item {
+      flex: 1;
+      padding: 20px 24px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 28px;
+      color: var(--green);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 9px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--subtext);
+    }
+
+    /* ─── SECTION ─── */
+    section {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+
+    .section-tag {
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(24px, 4vw, 40px);
+      margin-bottom: 12px;
+      line-height: 1.1;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: var(--subtext);
+      line-height: 1.8;
+      max-width: 520px;
+      margin-bottom: 48px;
+    }
+
+    /* ─── FEATURES GRID ─── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      transition: border-color .2s;
+    }
+    .feature-card:hover { border-color: rgba(0,230,118,.3); }
+    .feature-icon {
+      font-size: 24px;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .feature-name {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .feature-text {
+      font-size: 11px;
+      line-height: 1.7;
+      color: var(--subtext);
+    }
+
+    /* ─── INTEGRATIONS ─── */
+    .integrations-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 40px;
+    }
+    .integration-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .ib-tbank    { background: rgba(255,221,0,.08);   color: #ffdd00; border-color: rgba(255,221,0,.2); }
+    .ib-tinvest  { background: rgba(0,230,118,.08);   color: #00e676; border-color: rgba(0,230,118,.2); }
+    .ib-bybit    { background: rgba(247,147,26,.08);  color: #f7931a; border-color: rgba(247,147,26,.2); }
+    .ib-bitcoin  { background: rgba(247,147,26,.08);  color: #f7931a; border-color: rgba(247,147,26,.2); }
+    .ib-monero   { background: rgba(255,102,0,.08);   color: #ff6600; border-color: rgba(255,102,0,.2); }
+    .ib-steam    { background: rgba(102,192,244,.08); color: #66c0f4; border-color: rgba(102,192,244,.2); }
+
+    /* ─── CAROUSEL ─── */
+    .carousel-section {
+      padding: 80px 0;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(180deg, transparent, rgba(0,230,118,.03) 50%, transparent);
+    }
+    .carousel-header {
+      max-width: 1100px;
+      margin: 0 auto 40px;
+      padding: 0 24px;
+    }
+    .carousel-wrap {
+      position: relative;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .carousel-track {
+      position: relative;
+      height: 500px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 80px rgba(0,230,118,.06), 0 40px 80px rgba(0,0,0,.6);
+    }
+    .carousel-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity .6s ease;
+      background: var(--surface);
+    }
+    .carousel-slide.active { opacity: 1; }
+
+    /* Mock screen — Dashboard */
+    .mock-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(10,12,15,.95);
+      border-bottom: 1px solid var(--border);
+    }
+    .mock-brand {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 12px;
+      color: var(--green);
+    }
+    .mock-brand span { color: var(--subtext); font-weight: 300; }
+    .mock-nav-links { display: flex; gap: 12px; }
+    .mock-nav-link { font-size: 9px; color: var(--subtext); letter-spacing: .08em; }
+    .mock-btn {
+      font-size: 9px;
+      color: var(--green);
+      padding: 4px 10px;
+      border: 1px solid var(--green);
+      border-radius: 4px;
+      background: var(--green-dim);
+    }
+    .mock-body { padding: 16px 20px; }
+    .mock-rates {
+      display: flex; gap: 14px; margin-bottom: 12px;
+    }
+    .mock-rate { font-size: 9px; color: var(--subtext); }
+    .mock-rate span { color: var(--muted); }
+    .mock-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .mock-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .mock-card-label { font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--subtext); margin-bottom: 4px; }
+    .mock-card-value { font-family: var(--display); font-size: 18px; font-weight: 600; color: var(--green); }
+    .mock-card-value.red { color: var(--red); }
+    .mock-card-value.neutral { color: var(--text); }
+    .mock-table-head {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mock-th { font-size: 7px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .mock-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      padding: 8px 8px;
+      border-bottom: 1px solid rgba(30,35,41,.4);
+      align-items: center;
+    }
+    .mock-row:hover { background: rgba(255,255,255,.015); }
+    .mock-td { font-size: 9px; }
+    .mock-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 7px;
+      letter-spacing: .08em;
+      font-weight: 600;
+    }
+    .mb-tbank   { background: rgba(255,221,0,.1); color: #ffdd00; border: 1px solid rgba(255,221,0,.2); }
+    .mb-bybit   { background: rgba(247,147,26,.1); color: #f7931a; border: 1px solid rgba(247,147,26,.2); }
+    .mb-tinvest { background: rgba(0,230,118,.1); color: #00e676; border: 1px solid rgba(0,230,118,.2); }
+    .mb-bitcoin { background: rgba(247,147,26,.1); color: #f7931a; border: 1px solid rgba(247,147,26,.2); }
+    .mb-monero  { background: rgba(255,102,0,.1); color: #ff6600; border: 1px solid rgba(255,102,0,.2); }
+    .mb-steam   { background: rgba(102,192,244,.1); color: #66c0f4; border: 1px solid rgba(102,192,244,.2); }
+    .mock-green { color: var(--green); font-weight: 600; }
+    .mock-sub { color: var(--subtext); font-size: 8px; }
+
+    /* Mock screen — Bots */
+    .mock-bot-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .mock-bot-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .mock-bot-name { font-family: var(--display); font-size: 10px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .mock-bot-desc { font-size: 8px; color: var(--subtext); margin-bottom: 12px; line-height: 1.5; }
+    .mock-status-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .mock-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .mock-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .mock-dot.red { background: var(--red); }
+    .mock-dot.yellow { background: var(--gold); }
+    .mock-status-text { font-size: 8px; color: var(--subtext); }
+    .mock-btn-row { display: flex; gap: 6px; }
+    .mock-mini-btn {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 7px;
+      letter-spacing: .06em;
+      border: 1px solid;
+      text-transform: uppercase;
+    }
+    .mock-mini-btn.g { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .mock-mini-btn.r { border-color: var(--red); color: var(--red); background: rgba(77,0,0,.3); }
+
+    .mock-log {
+      margin-top: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .mock-log-line { font-size: 8px; color: var(--subtext); line-height: 1.8; }
+    .mock-log-line .ts { color: var(--muted); }
+    .mock-log-line .ok { color: var(--green); }
+    .mock-log-line .warn { color: var(--gold); }
+
+    /* Mock screen — Settings */
+    .mock-settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .mock-setting-group {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .mock-sg-title { font-size: 8px; letter-spacing: .12em; text-transform: uppercase; color: var(--subtext); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .mock-field { margin-bottom: 8px; }
+    .mock-field-label { font-size: 7px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .mock-field-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-size: 8px;
+      color: var(--subtext);
+      font-family: var(--mono);
+    }
+    .mock-field-input.filled { color: var(--text); border-color: rgba(0,230,118,.2); }
+
+    /* Carousel dots */
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      padding: 0;
+    }
+    .dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); width: 20px; border-radius: 3px; }
+
+    /* carousel label */
+    .carousel-label {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--subtext);
+      text-transform: uppercase;
+    }
+
+    /* ─── BOTS SECTION ─── */
+    .bots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .bot-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .bot-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .bot-card.trader::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+    .bot-card.investor::before { background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+    .bot-card.bybit::before { background: linear-gradient(90deg, transparent, #f7931a, transparent); }
+    .bot-card:hover { border-color: rgba(255,255,255,.1); }
+
+    .bot-tag {
+      font-size: 8px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      display: inline-block;
+    }
+    .bot-tag.g { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
+    .bot-tag.b { background: rgba(68,138,255,.1); color: var(--blue); border: 1px solid rgba(68,138,255,.3); }
+    .bot-tag.o { background: rgba(247,147,26,.1); color: #f7931a; border: 1px solid rgba(247,147,26,.3); }
+
+    .bot-name {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .bot-desc {
+      font-size: 11px;
+      line-height: 1.75;
+      color: var(--subtext);
+      margin-bottom: 20px;
+    }
+    .bot-features { list-style: none; }
+    .bot-features li {
+      font-size: 10px;
+      color: var(--subtext);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(30,35,41,.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bot-features li::before {
+      content: '›';
+      color: var(--green);
+      font-size: 14px;
+      line-height: 1;
+    }
+    .bot-features li:last-child { border-bottom: none; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      margin-top: 40px;
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-brand {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--green);
+    }
+    .footer-brand span { color: var(--subtext); font-weight: 300; }
+    .footer-copy {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .06em;
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .footer-link {
+      font-size: 10px;
+      letter-spacing: .08em;
+      color: var(--subtext);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+    .footer-link:hover { color: var(--text); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      nav { padding: 12px 16px; }
+      .nav-links .nav-link { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .bots-grid { grid-template-columns: 1fr; }
+      .stats-row { flex-wrap: wrap; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .stat-item:last-child { border-bottom: none; }
+      .mock-grid-3 { grid-template-columns: 1fr 1fr; }
+      .mock-bot-grid { grid-template-columns: 1fr; }
+      .mock-settings-grid { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+    @media (max-width: 480px) {
+      .carousel-track { height: 380px; }
+      .mock-table-head, .mock-row { grid-template-columns: 2fr 1fr 1fr; }
+      .mock-th:last-child, .mock-td:last-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <a href="/" class="nav-brand">Simple<span>Finance</span></a>
+  <div class="nav-links">
+    <a href="#features" class="nav-link">Возможности</a>
+    <a href="#bots" class="nav-link">Боты</a>
+    <a href="/login" class="nav-link">Войти</a>
+    <a href="/register" class="nav-btn">Регистрация</a>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<div class="hero">
+  <div class="hero-badge">Финансовый агрегатор нового поколения</div>
+
+  <h1 class="hero-title">
+    <span class="green">Simple</span><span class="dim">Finance</span>
+  </h1>
+  <div class="hero-subtitle">Все ваши активы в одном месте</div>
+
+  <p class="hero-desc">
+    Объединяем <strong>банки, брокеров, крипту и реальные активы</strong> в единый дашборд.
+    Отслеживайте портфель в реальном времени, управляйте торговыми ботами
+    и принимайте взвешенные решения на основе полной картины ваших финансов.
+  </p>
+
+  <div class="hero-cta">
+    <a href="/register" class="btn-primary">↗ Начать бесплатно</a>
+    <a href="/login" class="btn-outline">Войти в панель</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num">6+</div>
+      <div class="stat-label">Интеграций</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Торговых бота</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">RT</div>
+      <div class="stat-label">Данные онлайн</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">E2E</div>
+      <div class="stat-label">Шифрование</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FEATURES ─── -->
+<section id="features">
+  <div class="section-tag">// возможности</div>
+  <h2 class="section-title">Финансы под контролем</h2>
+  <p class="section-desc">
+    SimpleFinance подключается к вашим счетам и собирает данные автоматически —
+    вы видите полную картину без ручного ввода.
+  </p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">◈</span>
+      <div class="feature-name">Единый дашборд</div>
+      <p class="feature-text">
+        Все активы — рублёвые счета, акции, крипта, наличные — в одном интерфейсе.
+        Пересчёт в рублях по актуальным курсам ЦБ и биржи в реальном времени.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⬡</span>
+      <div class="feature-name">Мульти-интеграция</div>
+      <p class="feature-text">
+        Т-Банк, Т-Инвестиции, Bybit, Bitcoin, Monero, Steam.
+        Несколько аккаунтов одного брокера — поддерживаются без ограничений.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">▲</span>
+      <div class="feature-name">Безопасность</div>
+      <p class="feature-text">
+        API-ключи хранятся в зашифрованном виде (AES-256). Доступ только через
+        ваш аккаунт. Данные никогда не передаются третьим лицам.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">◎</span>
+      <div class="feature-name">Ручные активы</div>
+      <p class="feature-text">
+        Добавляйте активы вручную: недвижимость, наличные, займы. Всё учитывается
+        в общем балансе и учитывается при расчёте состояния.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⟳</span>
+      <div class="feature-name">AI-аналитика</div>
+      <p class="feature-text">
+        Интеграция с Claude AI для анализа портфеля: рекомендации по балансировке,
+        оценка рисков, ситуационный анализ рыночной конъюнктуры.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">▣</span>
+      <div class="feature-name">Управление ботами</div>
+      <p class="feature-text">
+        Запускайте и останавливайте торговых ботов прямо из браузера.
+        Логи в реальном времени, гибкая настройка стратегий.
+      </p>
+    </div>
+  </div>
+
+  <div class="integrations-row">
+    <div class="integration-badge ib-tbank">● Т-Банк</div>
+    <div class="integration-badge ib-tinvest">● Т-Инвестиции</div>
+    <div class="integration-badge ib-bybit">● Bybit</div>
+    <div class="integration-badge ib-bitcoin">₿ Bitcoin</div>
+    <div class="integration-badge ib-monero">ɱ Monero</div>
+    <div class="integration-badge ib-steam">♨ Steam</div>
+  </div>
+</section>
+
+<!-- ─── CAROUSEL ─── -->
+<div class="carousel-section">
+  <div class="carousel-header">
+    <div class="section-tag">// интерфейс</div>
+    <h2 class="section-title">Чистый и функциональный</h2>
+  </div>
+
+  <div class="carousel-wrap">
+    <div class="carousel-track" id="carousel">
+
+      <!-- Slide 1: Dashboard -->
+      <div class="carousel-slide active">
+        <div class="mock-nav">
+          <div class="mock-brand">Simple<span>Finance</span></div>
+          <div class="mock-nav-links">
+            <span class="mock-nav-link">↻ Обновить</span>
+            <span class="mock-nav-link">Развитие</span>
+            <span class="mock-nav-link">Настройки</span>
+            <span class="mock-nav-link">Выход</span>
+          </div>
+        </div>
+        <div class="mock-body">
+          <div class="mock-rates">
+            <span class="mock-rate"><span>USD/RUB</span> 87.42</span>
+            <span class="mock-rate"><span>EUR/RUB</span> 94.18</span>
+            <span class="mock-rate"><span>BTC/RUB</span> 8 214 000</span>
+            <span class="mock-rate"><span>XMR/RUB</span> 21 400</span>
+          </div>
+          <div class="mock-grid-3">
+            <div class="mock-card">
+              <div class="mock-card-label">Итого активов</div>
+              <div class="mock-card-value">₽ 2 847 300</div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-card-label">Кредиты</div>
+              <div class="mock-card-value red">₽ 143 000</div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-card-label">Чистый баланс</div>
+              <div class="mock-card-value neutral">₽ 2 704 300</div>
+            </div>
+          </div>
+          <div class="mock-table-head">
+            <span class="mock-th">Актив</span>
+            <span class="mock-th">Источник</span>
+            <span class="mock-th">Сумма</span>
+            <span class="mock-th">Тип</span>
+          </div>
+          <div class="mock-row">
+            <span class="mock-td"><span class="mock-green">Рублёвый счёт</span></span>
+            <span class="mock-td"><span class="mock-badge mb-tbank">Т-Банк</span></span>
+            <span class="mock-td mock-green">₽ 84 200</span>
+            <span class="mock-td mock-sub">Депозит</span>
+          </div>
+          <div class="mock-row">
+            <span class="mock-td"><span class="mock-green">SBER акции</span></span>
+            <span class="mock-td"><span class="mock-badge mb-tinvest">Т-Инвест</span></span>
+            <span class="mock-td mock-green">₽ 312 400</span>
+            <span class="mock-td mock-sub">Акции</span>
+          </div>
+          <div class="mock-row">
+            <span class="mock-td"><span class="mock-green">BTC</span></span>
+            <span class="mock-td"><span class="mock-badge mb-bitcoin">Bitcoin</span></span>
+            <span class="mock-td mock-green">₽ 1 232 100</span>
+            <span class="mock-td mock-sub">Крипта</span>
+          </div>
+          <div class="mock-row">
+            <span class="mock-td"><span class="mock-green">USDT</span></span>
+            <span class="mock-td"><span class="mock-badge mb-bybit">Bybit</span></span>
+            <span class="mock-td mock-green">₽ 437 800</span>
+            <span class="mock-td mock-sub">Спот</span>
+          </div>
+          <div class="mock-row">
+            <span class="mock-td"><span class="mock-green">XMR</span></span>
+            <span class="mock-td"><span class="mock-badge mb-monero">Monero</span></span>
+            <span class="mock-td mock-green">₽ 214 000</span>
+            <span class="mock-td mock-sub">Крипта</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2: Bots -->
+      <div class="carousel-slide">
+        <div class="mock-nav">
+          <div class="mock-brand">Simple<span>Finance</span></div>
+          <div style="font-size:9px;color:var(--subtext);letter-spacing:.08em">Развитие / Управление ботами</div>
+        </div>
+        <div class="mock-body">
+          <div class="mock-bot-grid">
+            <div class="mock-bot-card">
+              <div class="mock-bot-name">Trader Bot</div>
+              <div class="mock-bot-desc">AI-трейдер на основе Claude. Анализирует рынок и исполняет ордера по стратегии.</div>
+              <div class="mock-status-row">
+                <div class="mock-dot green"></div>
+                <span class="mock-status-text">Работает · 2ч 14м</span>
+              </div>
+              <div class="mock-btn-row">
+                <span class="mock-mini-btn r">■ Стоп</span>
+                <span class="mock-mini-btn g">Логи</span>
+              </div>
+            </div>
+            <div class="mock-bot-card">
+              <div class="mock-bot-name">Investor Bot</div>
+              <div class="mock-bot-desc">Долгосрочная стратегия. Ребалансировка портфеля по заданным целевым долям.</div>
+              <div class="mock-status-row">
+                <div class="mock-dot red"></div>
+                <span class="mock-status-text">Остановлен</span>
+              </div>
+              <div class="mock-btn-row">
+                <span class="mock-mini-btn g">▶ Старт</span>
+              </div>
+            </div>
+            <div class="mock-bot-card">
+              <div class="mock-bot-name">Bybit Bot</div>
+              <div class="mock-bot-desc">Торгует фьючерсами на Bybit. Скальпинг и momentum стратегии.</div>
+              <div class="mock-status-row">
+                <div class="mock-dot yellow"></div>
+                <span class="mock-status-text">Инициализация...</span>
+              </div>
+              <div class="mock-btn-row">
+                <span class="mock-mini-btn r">■ Стоп</span>
+              </div>
+            </div>
+            <div class="mock-bot-card">
+              <div class="mock-bot-name">AI Анализ</div>
+              <div class="mock-bot-desc">Запрос к Claude для анализа текущего портфеля и рыночной ситуации.</div>
+              <div class="mock-status-row">
+                <div class="mock-dot green"></div>
+                <span class="mock-status-text">Готов к запуску</span>
+              </div>
+              <div class="mock-btn-row">
+                <span class="mock-mini-btn g">▶ Анализ</span>
+              </div>
+            </div>
+          </div>
+          <div class="mock-log">
+            <div class="mock-log-line"><span class="ts">[14:32:01]</span> <span class="ok">BUY</span> BTC/USDT 0.0012 @ 94200 USDT</div>
+            <div class="mock-log-line"><span class="ts">[14:31:44]</span> <span class="ok">SIGNAL</span> RSI oversold, momentum positive</div>
+            <div class="mock-log-line"><span class="ts">[14:30:12]</span> <span class="warn">WARN</span> Spread increased, holding position</div>
+            <div class="mock-log-line"><span class="ts">[14:28:55]</span> <span class="ok">SELL</span> BTC/USDT 0.0012 @ 94850 USDT · PnL +7.8 USDT</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3: Settings -->
+      <div class="carousel-slide">
+        <div class="mock-nav">
+          <div class="mock-brand">Simple<span>Finance</span></div>
+          <div style="font-size:9px;color:var(--subtext);letter-spacing:.08em">Настройки интеграций</div>
+        </div>
+        <div class="mock-body">
+          <div class="mock-settings-grid">
+            <div class="mock-setting-group">
+              <div class="mock-sg-title">Т-Банк</div>
+              <div class="mock-field">
+                <div class="mock-field-label">Телефон</div>
+                <input class="mock-field-input filled" value="+7 (9••) •••-••-••" readonly>
+              </div>
+              <div class="mock-field">
+                <div class="mock-field-label">Пароль</div>
+                <input class="mock-field-input filled" value="••••••••••" type="password" readonly>
+              </div>
+            </div>
+            <div class="mock-setting-group">
+              <div class="mock-sg-title">Т-Инвестиции</div>
+              <div class="mock-field">
+                <div class="mock-field-label">API Token</div>
+                <input class="mock-field-input filled" value="t.••••••••••••••••••••••" readonly>
+              </div>
+            </div>
+            <div class="mock-setting-group">
+              <div class="mock-sg-title">Bybit</div>
+              <div class="mock-field">
+                <div class="mock-field-label">API Key</div>
+                <input class="mock-field-input filled" value="rG••••••••••••••••" readonly>
+              </div>
+              <div class="mock-field">
+                <div class="mock-field-label">Secret</div>
+                <input class="mock-field-input" placeholder="Не задан" readonly>
+              </div>
+            </div>
+            <div class="mock-setting-group">
+              <div class="mock-sg-title">Bitcoin · Monero</div>
+              <div class="mock-field">
+                <div class="mock-field-label">BTC Адрес</div>
+                <input class="mock-field-input filled" value="bc1q••••••••••••••••••" readonly>
+              </div>
+              <div class="mock-field">
+                <div class="mock-field-label">XMR Wallet</div>
+                <input class="mock-field-input filled" value="4A••••••••••••••••••••" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /carousel-track -->
+
+    <div class="carousel-dots">
+      <button class="dot active" data-slide="0"></button>
+      <button class="dot" data-slide="1"></button>
+      <button class="dot" data-slide="2"></button>
+    </div>
+    <div class="carousel-label" id="carousel-label">Дашборд — обзор портфеля</div>
+  </div>
+</div>
+
+<!-- ─── BOTS ─── -->
+<section id="bots">
+  <div class="section-tag">// торговые боты</div>
+  <h2 class="section-title">Автоматизация торговли</h2>
+  <p class="section-desc">
+    Три независимых торговых бота с разными стратегиями — от скальпинга
+    до долгосрочного инвестирования. Управление из браузера, логи в реальном времени.
+  </p>
+
+  <div class="bots-grid">
+    <div class="bot-card trader">
+      <span class="bot-tag g">AI Трейдер</span>
+      <div class="bot-name">Trader Bot</div>
+      <p class="bot-desc">
+        Торговый бот с AI-ядром на базе Claude. Анализирует рыночные данные,
+        формирует сигналы и исполняет ордера в автоматическом режиме.
+      </p>
+      <ul class="bot-features">
+        <li>Интеграция с Claude для анализа рынка</li>
+        <li>Краткосрочные стратегии (скальпинг, momentum)</li>
+        <li>Управление позицией и стоп-лоссом</li>
+        <li>Логи каждой сделки в реальном времени</li>
+      </ul>
+    </div>
+    <div class="bot-card investor">
+      <span class="bot-tag b">Долгосрок</span>
+      <div class="bot-name">Investor Bot</div>
+      <p class="bot-desc">
+        Бот для долгосрочного инвестирования. Следит за целевыми долями портфеля
+        и ребалансирует активы при отклонении от заданных параметров.
+      </p>
+      <ul class="bot-features">
+        <li>Целевое распределение по классам активов</li>
+        <li>Автоматическая ребалансировка</li>
+        <li>Консервативная стратегия управления рисками</li>
+        <li>Интеграция с T-Инвестиции</li>
+      </ul>
+    </div>
+    <div class="bot-card bybit">
+      <span class="bot-tag o">Bybit</span>
+      <div class="bot-name">Bybit Bot</div>
+      <p class="bot-desc">
+        Специализированный бот для торговли на Bybit. Работает со спотом
+        и фьючерсами, поддерживает несколько торговых пар одновременно.
+      </p>
+      <ul class="bot-features">
+        <li>Спот и фьючерсный рынок</li>
+        <li>Несколько торговых пар параллельно</li>
+        <li>Гибкая настройка стратегии</li>
+        <li>Мониторинг PnL в реальном времени</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Simple<span>Finance</span></div>
+    </div>
+    <div class="footer-copy">
+      © muinfra.ru 2026 — Все права защищены
+    </div>
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link">Политика конфиденциальности</a>
+      <a href="/login" class="footer-link">Войти</a>
+      <a href="/register" class="footer-link">Регистрация</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dots = document.querySelectorAll('.dot');
+  const label = document.getElementById('carousel-label');
+  const labels = [
+    'Дашборд — обзор портфеля',
+    'Торговые боты — управление и логи',
+    'Настройки — подключение интеграций'
+  ];
+
+  let current = 0;
+  let timer;
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    label.textContent = labels[current];
+  }
+
+  function startAuto() {
+    timer = setInterval(() => goTo(current + 1), 3500);
+  }
+
+  dots.forEach(d => {
+    d.addEventListener('click', () => {
+      clearInterval(timer);
+      goTo(parseInt(d.dataset.slide));
+      startAuto();
+    });
+  });
+
+  startAuto();
+</script>
+
+</body>
+</html>

@@ -3,7 +3,7 @@
 <nav>
   <div class="nav-brand">Simple<span>Finance</span></div>
   <div style="display:flex; align-items:center; gap:16px">
-    <a href="/">← Дашборд</a>
+    <a href="/dashboard">← Дашборд</a>
     <a href="/logout">Выход</a>
   </div>
 </nav>
@@ -34,7 +34,7 @@
         </div>
         <div class="field">
           <label>Session ID</label>
-          <input type="text" name="tbank_session_id" value="{{index .Keys "tbank_session_id"}}" placeholder="sessionid из cookie t.me" autocomplete="off">
+          <input type="password" name="tbank_session_id" value="" placeholder="{{if index .KeysSet "tbank_session_id"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}sessionid из cookie t.me{{end}}" autocomplete="off">
           <div class="field-hint">Сессионный идентификатор для API Т-Банка</div>
         </div>
       </div>
@@ -47,7 +47,7 @@
         </div>
         <div class="field">
           <label>API токен</label>
-          <input type="text" name="tinvest_token" value="{{index .Keys "tinvest_token"}}" placeholder="t.…" autocomplete="off">
+          <input type="password" name="tinvest_token" value="" placeholder="{{if index .KeysSet "tinvest_token"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}t.…{{end}}" autocomplete="off">
           <div class="field-hint">Токен из раздела «Инвестиции → Настройки → Токен API» приложения Т-Банк</div>
         </div>
       </div>
@@ -60,11 +60,11 @@
         </div>
         <div class="field">
           <label>API Key</label>
-          <input type="text" name="bybit_api_key" value="{{index .Keys "bybit_api_key"}}" placeholder="API ключ" autocomplete="off">
+          <input type="password" name="bybit_api_key" value="" placeholder="{{if index .KeysSet "bybit_api_key"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}API ключ{{end}}" autocomplete="off">
         </div>
         <div class="field">
           <label>API Secret</label>
-          <input type="password" name="bybit_api_secret" value="{{index .Keys "bybit_api_secret"}}" placeholder="API секрет" autocomplete="off">
+          <input type="password" name="bybit_api_secret" value="" placeholder="{{if index .KeysSet "bybit_api_secret"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}API секрет{{end}}" autocomplete="off">
         </div>
       </div>
 
@@ -76,7 +76,7 @@
         </div>
         <div class="field">
           <label>Адреса (через запятую)</label>
-          <input type="text" name="btc_addresses" value="{{index .Keys "btc_addresses"}}" placeholder="bc1q…, bc1q…" autocomplete="off">
+          <input type="text" name="btc_addresses" value="" placeholder="{{if index .KeysSet "btc_addresses"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}bc1q…, bc1q…{{end}}" autocomplete="off">
           <div class="field-hint">Публичные Bitcoin адреса для отслеживания баланса</div>
         </div>
       </div>
@@ -89,22 +89,22 @@
         </div>
         <div class="field">
           <label>Адрес кошелька</label>
-          <input type="text" name="monero_address" value="{{index .Keys "monero_address"}}" placeholder="4..." autocomplete="off">
+          <input type="text" name="monero_address" value="" placeholder="{{if index .KeysSet "monero_address"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}4...{{end}}" autocomplete="off">
           <div class="field-hint">Публичный адрес Monero (начинается с 4)</div>
         </div>
         <div class="field">
           <label>View Key (приватный)</label>
-          <input type="password" name="monero_view_key" value="{{index .Keys "monero_view_key"}}" placeholder="64-символьный hex" autocomplete="off">
+          <input type="password" name="monero_view_key" value="" placeholder="{{if index .KeysSet "monero_view_key"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}64-символьный hex{{end}}" autocomplete="off">
           <div class="field-hint">Приватный ключ просмотра — позволяет видеть баланс, но не тратить средства</div>
         </div>
         <div class="field">
           <label>RPC URL</label>
-          <input type="text" name="monero_rpc_url" value="{{index .Keys "monero_rpc_url"}}" placeholder="http://monero-wallet-rpc:18082/json_rpc" autocomplete="off">
+          <input type="text" name="monero_rpc_url" value="" placeholder="{{if index .KeysSet "monero_rpc_url"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}http://monero-wallet-rpc:18082/json_rpc{{end}}" autocomplete="off">
           <div class="field-hint">По умолчанию: http://monero-wallet-rpc:18082/json_rpc (Docker) или http://localhost:18082/json_rpc</div>
         </div>
         <div class="field">
           <label>Restore Height (номер блока создания кошелька)</label>
-          <input type="text" name="monero_restore_height" value="{{index .Keys "monero_restore_height"}}" placeholder="например 3100000" autocomplete="off">
+          <input type="text" name="monero_restore_height" value="" placeholder="{{if index .KeysSet "monero_restore_height"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}например 3100000{{end}}" autocomplete="off">
           <div class="field-hint">Укажите блок, начиная с которого сканировать транзакции. Чем точнее — тем быстрее синхронизация. Оставьте 0 для сканирования с начала (очень медленно).</div>
         </div>
       </div>
@@ -117,12 +117,12 @@
         </div>
         <div class="field">
           <label>SteamID64</label>
-          <input type="text" name="steam_id" value="{{index .Keys "steam_id"}}" placeholder="76561198..." autocomplete="off">
+          <input type="text" name="steam_id" value="" placeholder="{{if index .KeysSet "steam_id"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}76561198...{{end}}" autocomplete="off">
           <div class="field-hint">Числовой Steam ID (17 цифр). Найти: steamid.io или steamcommunity.com/profiles/XXXXXXXX</div>
         </div>
         <div class="field">
           <label>App ID игры</label>
-          <input type="text" name="steam_app_id" value="{{index .Keys "steam_app_id"}}" placeholder="730" autocomplete="off">
+          <input type="text" name="steam_app_id" value="" placeholder="{{if index .KeysSet "steam_app_id"}}•••••••••••• (установлен — оставьте пустым, чтобы не менять){{else}}730{{end}}" autocomplete="off">
           <div class="field-hint">730 = CS2, 570 = Dota 2, 440 = TF2. По умолчанию 730.</div>
         </div>
       </div>
@@ -139,9 +139,9 @@
     </div>
 
     <div class="settings-group" style="margin-bottom:12px">
-      <div class="settings-group-title">Добавить актив</div>
+      <div class="settings-group-title">Добавить запись</div>
       <form method="POST" action="/settings/assets/manual/create">
-        <div style="display:grid; grid-template-columns:1fr 140px 80px; gap:10px; align-items:end">
+        <div style="display:grid; grid-template-columns:1fr 120px 70px; gap:10px; align-items:end">
           <div class="field" style="margin-bottom:0">
             <label>Название</label>
             <input type="text" name="asset_name" placeholder="Наличные USD" required autocomplete="off">
@@ -155,6 +155,19 @@
             <input type="text" name="asset_currency" placeholder="RUB" maxlength="5" value="RUB">
           </div>
         </div>
+        <div style="margin-top:10px">
+          <label style="font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--subtext); display:block; margin-bottom:6px">Тип</label>
+          <div style="display:flex; gap:12px">
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); cursor:pointer">
+              <input type="radio" name="asset_type" value="asset" checked style="accent-color:var(--green)">
+              Актив (наличные, имущество…)
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--red); cursor:pointer">
+              <input type="radio" name="asset_type" value="debt" style="accent-color:var(--red)">
+              Долг (кредит, займ…)
+            </label>
+          </div>
+        </div>
         <div style="margin-top:12px">
           <button type="submit" class="btn primary">Добавить</button>
         </div>
@@ -165,15 +178,57 @@
     <div class="settings-group" style="margin-bottom:16px">
       <div class="settings-group-title">Текущие записи</div>
       {{range .ManualAssets}}
-      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border)">
-        <div style="font-size:12px; color:var(--text)">
-          {{.Name}}
-          <span style="color:var(--subtext); margin-left:8px">{{.Amount}} {{.Currency}}</span>
+      <div style="border-bottom:1px solid var(--border)">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0">
+          <div style="font-size:12px; color:var(--text)">
+            {{if eq .Type "credit_card"}}<span style="font-size:10px; color:var(--red); margin-right:6px; border:1px solid rgba(255,82,82,.3); border-radius:3px; padding:1px 5px">долг</span>{{end}}
+            {{.Name}}
+            <span style="color:var(--subtext); margin-left:8px">{{.Amount}} {{.Currency}}</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-shrink:0">
+            <button type="button" class="btn" style="font-size:10px; padding:4px 10px" data-edit-id="{{.ID}}" onclick="toggleEdit(this.dataset.editId)">Изменить</button>
+            <form method="POST" action="/settings/assets/manual/delete" style="margin:0">
+              <input type="hidden" name="id" value="{{.ID}}">
+              <button type="submit" class="btn danger" style="font-size:10px; padding:4px 10px" onclick="return confirm('Удалить запись?')">Удалить</button>
+            </form>
+          </div>
         </div>
-        <form method="POST" action="/settings/assets/manual/delete" style="margin:0">
-          <input type="hidden" name="id" value="{{.ID}}">
-          <button type="submit" class="btn danger" style="font-size:10px; padding:4px 10px" onclick="return confirm('Удалить запись?')">Удалить</button>
-        </form>
+        <div id="edit-{{.ID}}" style="display:none; padding:12px 0 16px">
+          <form method="POST" action="/settings/assets/manual/update">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <div style="display:grid; grid-template-columns:1fr 120px 70px; gap:10px; align-items:end">
+              <div class="field" style="margin-bottom:0">
+                <label>Название</label>
+                <input type="text" name="asset_name" value="{{.Name}}" required autocomplete="off">
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label>Сумма</label>
+                <input type="number" name="asset_amount" value="{{.Amount}}" step="any" min="0" required>
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label>Валюта</label>
+                <input type="text" name="asset_currency" value="{{.Currency}}" maxlength="5">
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <label style="font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--subtext); display:block; margin-bottom:6px">Тип</label>
+              <div style="display:flex; gap:12px">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); cursor:pointer">
+                  <input type="radio" name="asset_type" value="asset" {{if ne .Type "credit_card"}}checked{{end}} style="accent-color:var(--green)">
+                  Актив
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--red); cursor:pointer">
+                  <input type="radio" name="asset_type" value="debt" {{if eq .Type "credit_card"}}checked{{end}} style="accent-color:var(--red)">
+                  Долг
+                </label>
+              </div>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:8px">
+              <button type="submit" class="btn primary" style="font-size:11px">Сохранить</button>
+              <button type="button" class="btn" style="font-size:11px" data-edit-id="{{.ID}}" onclick="toggleEdit(this.dataset.editId)">Отмена</button>
+            </div>
+          </form>
+        </div>
       </div>
       {{end}}
     </div>
@@ -387,6 +442,10 @@ function updateInstFields() {
     var el = document.getElementById('inst-' + s);
     if (el) el.style.display = (t === s) ? 'block' : 'none';
   });
+}
+function toggleEdit(id) {
+  var el = document.getElementById('edit-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 </script>
 {{end}}

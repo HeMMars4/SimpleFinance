@@ -4,11 +4,16 @@
 {{end}}
 
 <!-- Summary cards -->
+{{$hasDebt := .DebtTotalRUB}}
+{{if $hasDebt}}
+<div class="grid-4">
+{{else}}
 <div class="grid-3">
+{{end}}
   <div class="card">
     <div class="card-label">Итого активов</div>
     <div class="card-value">{{fmtRUB .TotalRUB}}</div>
-    <div class="timestamp" style="margin-top:8px">без кредитных</div>
+    <div class="timestamp" style="margin-top:8px">без долгов</div>
   </div>
   <div class="card">
     <div class="card-label">Банк & сбережения</div>
@@ -18,6 +23,13 @@
     <div class="card-label">Инвестиции</div>
     <div class="card-value neutral">{{fmtRUB .InvestTotalRUB}}</div>
   </div>
+  {{if $hasDebt}}
+  <div class="card">
+    <div class="card-label">Долг</div>
+    <div class="card-value credit">{{fmtRUB .DebtTotalRUB}}</div>
+    <div class="timestamp" style="margin-top:8px">кредитки & долги</div>
+  </div>
+  {{end}}
 </div>
 
 <!-- Rates + timestamp -->
@@ -234,15 +246,15 @@
 </table>
 {{end}}
 
-<!-- Credit cards -->
+<!-- Credit cards / debt -->
 {{if .CreditCards}}
 <div class="credit-section">
-  <div class="section-title">Кредитные карты (не в общем итоге)</div>
+  <div class="section-title">Задолженность по кредитным картам</div>
   <table class="asset-table">
     <thead>
       <tr>
-        <th>Карта</th>
-        <th>Доступный лимит</th>
+        <th>Карта / долг</th>
+        <th>Сумма долга</th>
         <th>В рублях</th>
       </tr>
     </thead>
@@ -260,7 +272,7 @@
     </tbody>
   </table>
   <div style="font-size:11px; color:var(--subtext)">
-    Общий доступный лимит: <span style="color:var(--red)">{{fmtRUB .CreditTotalRUB}}</span>
+    Итого долг: <span style="color:var(--red)">{{fmtRUB .DebtTotalRUB}}</span>
   </div>
 </div>
 {{end}}

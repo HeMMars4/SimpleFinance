@@ -84,9 +84,19 @@ type UserSettings struct {
 	MaxLossPct         float64 `db:"max_loss_pct"`
 	ClaudeAPIKey       string  `db:"claude_api_key"`
 	TInvestTradeToken  string  `db:"tinvest_trade_token"`
-	BotEnabled         bool    `db:"bot_enabled"`
-	BotIntervalMinutes int     `db:"bot_interval_minutes"`
-	BotUseMargin       bool    `db:"bot_use_margin"`
+
+	// Trader bot (T-Invest, short-term, news-aware)
+	BotEnabled         bool `db:"bot_enabled"`
+	BotIntervalMinutes int  `db:"bot_interval_minutes"`
+	BotUseMargin       bool `db:"bot_use_margin"`
+
+	// Investor bot (T-Invest, long-term rebalancing)
+	InvestorBotEnabled    bool `db:"investor_bot_enabled"`
+	InvestorIntervalHours int  `db:"investor_interval_hours"` // 24 (1 day) – 720 (30 days)
+
+	// Bybit crypto bot
+	BybitBotEnabled     bool `db:"bybit_bot_enabled"`
+	BybitBotIntervalMin int  `db:"bybit_bot_interval_min"`
 }
 
 type BotLog struct {
@@ -121,12 +131,13 @@ type DashboardData struct {
 	CreditCards     []Asset
 	ManualAssets    []Asset // cash/manual entries converted to Asset format
 	TotalRUB        float64
-	CreditTotalRUB  float64
+	CreditTotalRUB  float64 // kept for snapshot compat; equals DebtTotalRUB
 	BankTotalRUB    float64
 	CryptoTotalRUB  float64
 	InvestTotalRUB  float64
 	SteamTotalRUB   float64
 	ManualTotalRUB  float64
+	DebtTotalRUB    float64
 	LastUpdated     time.Time
 	Error           string
 	Rates           map[string]float64

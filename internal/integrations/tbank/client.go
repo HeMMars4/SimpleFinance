@@ -164,10 +164,17 @@ func mapAccounts(accounts []account, usdRUBRate float64) []models.Asset {
 
 		currCode := normCurrency(a.Currency)
 
-		amountRaw := a.MoneyAmount.Value
+		// For credit cards use the debt (owed amount) as the primary value.
+		// Regular accounts use moneyAmount (current balance).
+		var amountRaw float64
+		if a.AccountType == "Credit" {
+			if a.DebtAmount != nil {
+				amountRaw = a.DebtAmount.Value
+			}
+		} else {
+			amountRaw = a.MoneyAmount.Value
+		}
 
-		// For credit cards, use the available limit as the usable amount
-		// but mark as credit type — shown separately
 		var amountRUB float64
 		switch currCode {
 		case "RUB", "643":
@@ -175,14 +182,23 @@ func mapAccounts(accounts []account, usdRUBRate float64) []models.Asset {
 		case "USD", "840":
 			amountRUB = amountRaw * usdRUBRate
 		default:
-			amountRUB = amountRaw // fallback
+			amountRUB = amountRaw
 		}
 
 		extra := ""
-		if a.AccountType == "Credit" && a.DebtAmount != nil {
+		if a.AccountType == "Credit" {
+			var limitVal, availVal float64
+			if a.CreditLimit != nil {
+				limitVal = a.CreditLimit.Value
+			}
+			if a.MoneyAmount != nil {
+				availVal = a.MoneyAmount.Value
+			}
+			debtVal := amountRaw
 			b, _ := json.Marshal(map[string]interface{}{
-				"credit_limit": a.CreditLimit,
-				"debt":         a.DebtAmount.Value,
+				"credit_limit": limitVal,
+				"available":    availVal,
+				"debt":         debtVal,
 			})
 			extra = string(b)
 		}

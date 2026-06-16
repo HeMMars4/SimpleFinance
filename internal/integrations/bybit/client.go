@@ -61,7 +61,7 @@ type fundingResponse struct {
 	} `json:"result"`
 }
 
-// FetchSpotAssets fetches wallet balances from all account types (UNIFIED, SPOT, FUND)
+// FetchSpotAssets fetches wallet balances from all account types (UNIFIED, SPOT, CONTRACT, FUND)
 func (c *Client) FetchSpotAssets(ctx context.Context, usdRUBRate float64) ([]models.Asset, error) {
 	if c.apiKey == "" {
 		return nil, fmt.Errorf("bybit API key not configured")
@@ -69,7 +69,9 @@ func (c *Client) FetchSpotAssets(ctx context.Context, usdRUBRate float64) ([]mod
 
 	var allAssets []models.Asset
 
-	for _, accountType := range []string{"UNIFIED", "SPOT"} {
+	// CONTRACT covers USDT/USDC perpetuals and inverse contracts for non-UTA accounts.
+	// UNIFIED already includes futures for UTA accounts, but CONTRACT is harmless to try.
+	for _, accountType := range []string{"UNIFIED", "CONTRACT", "SPOT"} {
 		assets, err := c.fetchFromAccountType(ctx, accountType, usdRUBRate)
 		if err != nil {
 			slog.Debug("bybit fetch skipped", "accountType", accountType, "err", err)

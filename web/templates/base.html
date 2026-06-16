@@ -120,6 +120,12 @@
       gap: 16px;
       margin-bottom: 24px;
     }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
 
     .section-title {
       font-size: 10px;
@@ -235,10 +241,12 @@
 
     @media (max-width: 768px) {
       .grid-3 { grid-template-columns: 1fr 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
       main { padding: 16px; }
     }
     @media (max-width: 480px) {
       .grid-3 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>

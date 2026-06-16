@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/HeMMars4/simple-finance/config"
+	"github.com/HeMMars4/simple-finance/internal/crypto"
 	"github.com/HeMMars4/simple-finance/internal/models"
 )
 
@@ -20,9 +21,10 @@ type User struct {
 
 type DB struct {
 	*sqlx.DB
+	encKey []byte
 }
 
-func New(cfg config.DBConfig) (*DB, error) {
+func New(cfg config.DBConfig, encKey []byte) (*DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Name,
@@ -33,7 +35,7 @@ func New(cfg config.DBConfig) (*DB, error) {
 	}
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(5)
-	return &DB{db}, nil
+	return &DB{DB: db, encKey: encKey}, nil
 }
 
 // SaveAssets replaces all assets for a given user+source in one transaction
@@ -123,7 +125,7 @@ func (db *DB) GetSnapshots(ctx context.Context, limit int) ([]models.Snapshot, e
 	return snaps, err
 }
 
-// GetAllAPIKeys returns all stored API keys for a user as a map
+// GetAllAPIKeys returns all stored API keys for a user as a map (values are decrypted).
 func (db *DB) GetAllAPIKeys(ctx context.Context, userID int64) (map[string]string, error) {
 	rows, err := db.QueryxContext(ctx,
 		`SELECT key_name, key_value FROM api_keys WHERE user_id = $1`, userID)
@@ -137,19 +139,35 @@ func (db *DB) GetAllAPIKeys(ctx context.Context, userID int64) (map[string]strin
 		if err := rows.Scan(&name, &value); err != nil {
 			return nil, err
 		}
-		result[name] = value
+		plain, _ := crypto.Decrypt(db.encKey, value)
+		result[name] = plain
 	}
 	return result, rows.Err()
 }
 
-// SetAPIKey upserts a single API key value for a user
+// SetAPIKey upserts a single API key value for a user (value is encrypted at rest).
 func (db *DB) SetAPIKey(ctx context.Context, userID int64, name, value string) error {
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO api_keys (user_id, key_name, key_value, updated_at)
-		VALUES ($1, $2, $3, NOW())
-		ON CONFLICT (user_id, key_name) DO UPDATE SET key_value = EXCLUDED.key_value, updated_at = NOW()`,
-		userID, name, value,
+	stored, err := crypto.Encrypt(db.encKey, value)
+	if err != nil {
+		return err
+	}
+	res, err := db.ExecContext(ctx,
+		`UPDATE api_keys SET key_value = $3, updated_at = NOW() WHERE user_id = $1 AND key_name = $2`,
+		userID, name, stored,
 	)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		_, err = db.ExecContext(ctx,
+			`INSERT INTO api_keys (user_id, key_name, key_value, updated_at) VALUES ($1, $2, $3, NOW())`,
+			userID, name, stored,
+		)
+	}
 	return err
 }
 
@@ -216,6 +234,14 @@ func (db *DB) CreateManualAsset(ctx context.Context, userID int64, name string, 
 	_, err := db.ExecContext(ctx,
 		`INSERT INTO manual_assets (user_id, name, type, amount, currency) VALUES ($1, $2, $3, $4, $5)`,
 		userID, name, typ, amount, currency,
+	)
+	return err
+}
+
+func (db *DB) UpdateManualAsset(ctx context.Context, userID, id int64, name string, typ models.AssetType, amount float64, currency string) error {
+	_, err := db.ExecContext(ctx,
+		`UPDATE manual_assets SET name=$3, type=$4, amount=$5, currency=$6 WHERE id=$1 AND user_id=$2`,
+		id, userID, name, typ, amount, currency,
 	)
 	return err
 }
@@ -291,39 +317,83 @@ func (db *DB) GetUserSettings(ctx context.Context, userID int64) (*models.UserSe
 	var s models.UserSettings
 	err := db.QueryRowxContext(ctx,
 		`SELECT user_id, risk_level, max_loss_pct, claude_api_key, tinvest_trade_token,
-		        COALESCE(bot_enabled, FALSE) AS bot_enabled,
-		        COALESCE(bot_interval_minutes, 60) AS bot_interval_minutes,
-		        COALESCE(bot_use_margin, FALSE) AS bot_use_margin
+		        COALESCE(bot_enabled, FALSE)              AS bot_enabled,
+		        COALESCE(bot_interval_minutes, 60)        AS bot_interval_minutes,
+		        COALESCE(bot_use_margin, FALSE)           AS bot_use_margin,
+		        COALESCE(investor_bot_enabled, FALSE)     AS investor_bot_enabled,
+		        COALESCE(investor_interval_hours, 24)     AS investor_interval_hours,
+		        COALESCE(bybit_bot_enabled, FALSE)        AS bybit_bot_enabled,
+		        COALESCE(bybit_bot_interval_min, 60)      AS bybit_bot_interval_min
 		 FROM user_settings WHERE user_id = $1`, userID,
 	).StructScan(&s)
 	if err != nil {
 		return &models.UserSettings{
-			UserID:             userID,
-			RiskLevel:          "medium",
-			MaxLossPct:         5.0,
-			BotIntervalMinutes: 60,
+			UserID:                userID,
+			RiskLevel:             "medium",
+			MaxLossPct:            5.0,
+			BotIntervalMinutes:    60,
+			InvestorIntervalHours: 24,
+			BybitBotIntervalMin:   60,
 		}, nil
 	}
+	s.ClaudeAPIKey, _ = crypto.Decrypt(db.encKey, s.ClaudeAPIKey)
+	s.TInvestTradeToken, _ = crypto.Decrypt(db.encKey, s.TInvestTradeToken)
 	return &s, nil
 }
 
 func (db *DB) SaveUserSettings(ctx context.Context, s *models.UserSettings) error {
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO user_settings (user_id, risk_level, max_loss_pct, claude_api_key, tinvest_trade_token,
-		    bot_enabled, bot_interval_minutes, bot_use_margin, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-		ON CONFLICT (user_id) DO UPDATE SET
-		  risk_level = EXCLUDED.risk_level,
-		  max_loss_pct = EXCLUDED.max_loss_pct,
-		  claude_api_key = EXCLUDED.claude_api_key,
-		  tinvest_trade_token = EXCLUDED.tinvest_trade_token,
-		  bot_enabled = EXCLUDED.bot_enabled,
-		  bot_interval_minutes = EXCLUDED.bot_interval_minutes,
-		  bot_use_margin = EXCLUDED.bot_use_margin,
-		  updated_at = NOW()`,
-		s.UserID, s.RiskLevel, s.MaxLossPct, s.ClaudeAPIKey, s.TInvestTradeToken,
+	claudeKey, err := crypto.Encrypt(db.encKey, s.ClaudeAPIKey)
+	if err != nil {
+		return err
+	}
+	tradeToken, err := crypto.Encrypt(db.encKey, s.TInvestTradeToken)
+	if err != nil {
+		return err
+	}
+	// UPDATE existing row first; INSERT only if no row exists.
+	// Avoids ON CONFLICT which requires the constraint to exist in the DB.
+	res, err := db.ExecContext(ctx, `
+		UPDATE user_settings SET
+		  risk_level              = $2,
+		  max_loss_pct            = $3,
+		  claude_api_key          = $4,
+		  tinvest_trade_token     = $5,
+		  bot_enabled             = $6,
+		  bot_interval_minutes    = $7,
+		  bot_use_margin          = $8,
+		  investor_bot_enabled    = $9,
+		  investor_interval_hours = $10,
+		  bybit_bot_enabled       = $11,
+		  bybit_bot_interval_min  = $12,
+		  updated_at              = NOW()
+		WHERE user_id = $1`,
+		s.UserID, s.RiskLevel, s.MaxLossPct, claudeKey, tradeToken,
 		s.BotEnabled, s.BotIntervalMinutes, s.BotUseMargin,
+		s.InvestorBotEnabled, s.InvestorIntervalHours,
+		s.BybitBotEnabled, s.BybitBotIntervalMin,
 	)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO user_settings (
+			    user_id, risk_level, max_loss_pct, claude_api_key, tinvest_trade_token,
+			    bot_enabled, bot_interval_minutes, bot_use_margin,
+			    investor_bot_enabled, investor_interval_hours,
+			    bybit_bot_enabled, bybit_bot_interval_min,
+			    updated_at)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())`,
+			s.UserID, s.RiskLevel, s.MaxLossPct, claudeKey, tradeToken,
+			s.BotEnabled, s.BotIntervalMinutes, s.BotUseMargin,
+			s.InvestorBotEnabled, s.InvestorIntervalHours,
+			s.BybitBotEnabled, s.BybitBotIntervalMin,
+		)
+	}
 	return err
 }
 

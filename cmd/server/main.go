@@ -27,7 +27,7 @@ func main() {
 
 	cfg := config.Load()
 
-	db, err := storage.New(cfg.DB)
+	db, err := storage.New(cfg.DB, cfg.EncryptionKey)
 	if err != nil {
 		slog.Error("db connect failed", "err", err)
 		os.Exit(1)
@@ -71,6 +71,8 @@ func main() {
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
+	r.With(middleware.Timeout(10 * time.Second)).Get("/", h.Landing)
+
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Timeout(30 * time.Second))
 		r.Get("/login", h.LoginPage)
@@ -85,7 +87,7 @@ func main() {
 		r.Use(h.InjectUserID)
 
 		// Dashboard
-		r.With(middleware.Timeout(30 * time.Second)).Get("/", h.Dashboard)
+		r.With(middleware.Timeout(30 * time.Second)).Get("/dashboard", h.Dashboard)
 		r.With(middleware.Timeout(3 * time.Minute)).Post("/refresh", h.Refresh)
 
 		// Settings — integration keys
@@ -94,6 +96,7 @@ func main() {
 
 		// Settings — manual assets
 		r.With(middleware.Timeout(15 * time.Second)).Post("/settings/assets/manual/create", h.CreateManualAsset)
+		r.With(middleware.Timeout(15 * time.Second)).Post("/settings/assets/manual/update", h.UpdateManualAsset)
 		r.With(middleware.Timeout(15 * time.Second)).Post("/settings/assets/manual/delete", h.DeleteManualAsset)
 
 		// Settings — asset visibility
@@ -112,12 +115,22 @@ func main() {
 		r.With(middleware.Timeout(2 * time.Minute)).Post("/develop/analyze", h.AnalyzePortfolio)
 		r.With(middleware.Timeout(30 * time.Second)).Post("/develop/trade", h.ExecuteTrade)
 
-		// Bot daemon control
+		// Bot daemon control — trader (original)
 		r.With(middleware.Timeout(10 * time.Second)).Get("/develop/bot/status", h.BotStatus)
 		r.With(middleware.Timeout(10 * time.Second)).Post("/develop/bot/start", h.BotStart)
 		r.With(middleware.Timeout(10 * time.Second)).Post("/develop/bot/stop", h.BotStop)
 		r.With(middleware.Timeout(10 * time.Second)).Get("/develop/bot/logs", h.BotLogs)
 		r.With(middleware.Timeout(10 * time.Second)).Post("/develop/bot/logs/clear", h.BotLogsClear)
+		// Bot daemon control — investor
+		r.With(middleware.Timeout(10 * time.Second)).Get("/develop/bot/investor/status", h.InvestorBotStatus)
+		r.With(middleware.Timeout(10 * time.Second)).Post("/develop/bot/investor/start", h.InvestorBotStart)
+		r.With(middleware.Timeout(10 * time.Second)).Post("/develop/bot/investor/stop", h.InvestorBotStop)
+		// Bot daemon control — bybit
+		r.With(middleware.Timeout(10 * time.Second)).Get("/develop/bot/bybit/status", h.BybitBotStatus)
+		r.With(middleware.Timeout(10 * time.Second)).Post("/develop/bot/bybit/start", h.BybitBotStart)
+		r.With(middleware.Timeout(10 * time.Second)).Post("/develop/bot/bybit/stop", h.BybitBotStop)
+
+
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

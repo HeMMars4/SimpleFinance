@@ -341,6 +341,7 @@ func (a *Aggregator) BuildDashboard(ctx context.Context, userID int64) (*models.
 		case models.AssetTypeCreditCard:
 			data.CreditCards = append(data.CreditCards, asset)
 			data.CreditTotalRUB += asset.AmountRUB
+			data.DebtTotalRUB += asset.AmountRUB
 		case models.AssetTypeBankCurrent, models.AssetTypeBankSaving:
 			data.BankAssets = append(data.BankAssets, asset)
 			data.BankTotalRUB += asset.AmountRUB
@@ -379,7 +380,7 @@ func (a *Aggregator) BuildDashboard(ctx context.Context, userID int64) (*models.
 		data.Assets = append(data.Assets, asset)
 	}
 
-	// Manual assets (cash entries)
+	// Manual assets (cash and debt entries)
 	manuals, _ := a.db.GetManualAssets(ctx, userID)
 	for _, ma := range manuals {
 		var amountRUB float64
@@ -398,14 +399,20 @@ func (a *Aggregator) BuildDashboard(ctx context.Context, userID int64) (*models.
 		asset := models.Asset{
 			Source:    "manual",
 			Name:      ma.Name,
-			Type:      models.AssetTypeCash,
+			Type:      ma.Type,
 			AmountRaw: ma.Amount,
 			Currency:  ma.Currency,
 			AmountRUB: amountRUB,
 		}
-		data.ManualAssets = append(data.ManualAssets, asset)
-		data.ManualTotalRUB += amountRUB
-		data.TotalRUB += amountRUB
+		if ma.Type == models.AssetTypeCreditCard {
+			data.CreditCards = append(data.CreditCards, asset)
+			data.CreditTotalRUB += amountRUB
+			data.DebtTotalRUB += amountRUB
+		} else {
+			data.ManualAssets = append(data.ManualAssets, asset)
+			data.ManualTotalRUB += amountRUB
+			data.TotalRUB += amountRUB
+		}
 	}
 
 	data.BuildChartData()

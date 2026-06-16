@@ -1,17 +1,19 @@
 package config
 
 import (
+	"crypto/sha256"
 	"os"
 	"strconv"
 	"strings"
 )
 
 type Config struct {
-	Port         string
-	TLSCert      string
-	TLSKey       string
-	Secret       string
-	DB           DBConfig
+	Port          string
+	TLSCert       string
+	TLSKey        string
+	Secret        string
+	EncryptionKey []byte
+	DB            DBConfig
 	TBank         TBankConfig
 	TInvest       TInvestConfig
 	Bybit         BybitConfig
@@ -66,11 +68,18 @@ func Load() *Config {
 		xmrAddresses = strings.Split(xmrRaw, ",")
 	}
 
+	var encKey []byte
+	if raw := getEnv("ENCRYPTION_KEY", ""); raw != "" {
+		sum := sha256.Sum256([]byte(raw))
+		encKey = sum[:]
+	}
+
 	return &Config{
-		Port:    getEnv("APP_PORT", "8081"),
-		TLSCert: getEnv("TLS_CERT", ""),
-		TLSKey:  getEnv("TLS_KEY", ""),
-		Secret:  getEnv("APP_SECRET", "dev-secret-change-me"),
+		Port:          getEnv("APP_PORT", "443"),
+		EncryptionKey: encKey,
+		TLSCert:       getEnv("TLS_CERT", ""),
+		TLSKey:        getEnv("TLS_KEY", ""),
+		Secret:        getEnv("APP_SECRET", "dev-secret-change-me"),
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),

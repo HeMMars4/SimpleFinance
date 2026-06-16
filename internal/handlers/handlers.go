@@ -73,10 +73,15 @@ func (h *Handler) renderLogin(w http.ResponseWriter, name string, data any) {
 	h.render(w, name, data, filepath.Join(h.tmplDir, name))
 }
 
+func (h *Handler) Landing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	http.ServeFile(w, r, filepath.Join(h.tmplDir, "landing.html"))
+}
+
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("sf_token")
 	if err == nil && h.auth.ValidateToken(cookie.Value) {
-		http.Redirect(w, r, "/", http.StatusFound)
+		http.Redirect(w, r, "/dashboard", http.StatusFound)
 		return
 	}
 	h.renderLogin(w, "login.html", nil)
@@ -84,7 +89,7 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RegisterPage(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie("sf_token"); err == nil && h.auth.ValidateToken(cookie.Value) {
-		http.Redirect(w, r, "/", http.StatusFound)
+		http.Redirect(w, r, "/dashboard", http.StatusFound)
 		return
 	}
 	h.renderLogin(w, "register.html", nil)
@@ -132,7 +137,7 @@ func (h *Handler) RegisterSubmit(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name: "sf_token", Value: token, Path: "/", MaxAge: 86400, HttpOnly: true, SameSite: http.SameSiteLaxMode,
 	})
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/dashboard", http.StatusFound)
 }
 
 func (h *Handler) LoginSubmit(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +169,7 @@ func (h *Handler) LoginSubmit(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name: "sf_token", Value: token, Path: "/", MaxAge: 86400, HttpOnly: true, SameSite: http.SameSiteLaxMode,
 	})
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/dashboard", http.StatusFound)
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -201,7 +206,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 // SettingsData holds data for the settings page
 type SettingsData struct {
-	Keys           map[string]string
+	KeysSet        map[string]bool // true when a key is saved; real values are never sent to the browser
 	CurrentUser    string
 	Success        bool
 	Error          string
@@ -215,12 +220,16 @@ func (h *Handler) loadSettingsData(r *http.Request) *SettingsData {
 	ctx := r.Context()
 	uid := ctxUserID(r)
 	keys, _ := h.db.GetAllAPIKeys(ctx, uid)
+	keysSet := make(map[string]bool, len(keys))
+	for k, v := range keys {
+		keysSet[k] = v != ""
+	}
 	assets, _ := h.db.GetAllAssets(ctx, uid)
 	hidden, _ := h.db.GetHiddenAssets(ctx, uid)
 	manuals, _ := h.db.GetManualAssets(ctx, uid)
 	instances, _ := h.db.GetIntegrationInstances(ctx, uid)
 	return &SettingsData{
-		Keys:           keys,
+		KeysSet:        keysSet,
 		CurrentUser:    auth.GetUsername(r),
 		AllAssets:      assets,
 		HiddenAssets:   hidden,
@@ -251,6 +260,9 @@ func (h *Handler) SaveSettings(w http.ResponseWriter, r *http.Request) {
 	uid := ctxUserID(r)
 	for _, field := range fields {
 		val := strings.TrimSpace(r.FormValue(field))
+		if val == "" {
+			continue // empty = keep existing key unchanged
+		}
 		if err := h.db.SetAPIKey(ctx, uid, field, val); err != nil {
 			slog.Error("save api key", "key", field, "err", err)
 			d := h.loadSettingsData(r)
@@ -268,12 +280,20 @@ func (h *Handler) SaveSettings(w http.ResponseWriter, r *http.Request) {
 
 // --- Manual assets ---
 
+func parseManualAssetType(s string) models.AssetType {
+	if s == "debt" {
+		return models.AssetTypeCreditCard
+	}
+	return models.AssetTypeCash
+}
+
 func (h *Handler) CreateManualAsset(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	uid := ctxUserID(r)
 	name := strings.TrimSpace(r.FormValue("asset_name"))
 	currency := strings.ToUpper(strings.TrimSpace(r.FormValue("asset_currency")))
 	amount, _ := strconv.ParseFloat(r.FormValue("asset_amount"), 64)
+	assetType := parseManualAssetType(r.FormValue("asset_type"))
 
 	if name == "" || amount <= 0 || currency == "" {
 		d := h.loadSettingsData(r)
@@ -282,9 +302,34 @@ func (h *Handler) CreateManualAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.db.CreateManualAsset(r.Context(), uid, name, models.AssetTypeCash, amount, currency); err != nil {
+	if err := h.db.CreateManualAsset(r.Context(), uid, name, assetType, amount, currency); err != nil {
 		d := h.loadSettingsData(r)
 		d.Error = "Ошибка сохранения: " + err.Error()
+		h.render(w, "settings.html", d, filepath.Join(h.tmplDir, "settings.html"))
+		return
+	}
+	http.Redirect(w, r, "/settings", http.StatusFound)
+}
+
+func (h *Handler) UpdateManualAsset(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	uid := ctxUserID(r)
+	id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+	name := strings.TrimSpace(r.FormValue("asset_name"))
+	currency := strings.ToUpper(strings.TrimSpace(r.FormValue("asset_currency")))
+	amount, _ := strconv.ParseFloat(r.FormValue("asset_amount"), 64)
+	assetType := parseManualAssetType(r.FormValue("asset_type"))
+
+	if name == "" || amount <= 0 || currency == "" {
+		d := h.loadSettingsData(r)
+		d.Error = "Заполните все поля: название, сумма и валюта"
+		h.render(w, "settings.html", d, filepath.Join(h.tmplDir, "settings.html"))
+		return
+	}
+
+	if err := h.db.UpdateManualAsset(r.Context(), uid, id, name, assetType, amount, currency); err != nil {
+		d := h.loadSettingsData(r)
+		d.Error = "Ошибка обновления: " + err.Error()
 		h.render(w, "settings.html", d, filepath.Join(h.tmplDir, "settings.html"))
 		return
 	}
@@ -406,29 +451,45 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 // --- Development (AI Trading) ---
 
 type DevelopData struct {
-	Settings     *models.UserSettings
-	Saved        bool
-	Error        string
-	HasPortfolio bool
-	BotRunning   bool
+	Settings       *models.UserSettings
+	Saved          bool
+	Error          string
+	HasPortfolio   bool
+	TraderRunning  bool
+	InvestorRunning bool
+	BybitRunning   bool
+	InvestTotalRUB float64
+	BybitTotalRUB  float64
 }
 
 func (h *Handler) Development(w http.ResponseWriter, r *http.Request) {
 	uid := ctxUserID(r)
 	settings, _ := h.db.GetUserSettings(r.Context(), uid)
 	assets, _ := h.db.GetAllAssets(r.Context(), uid)
+
 	hasPortfolio := false
+	var investTotal, bybitTotal float64
 	for _, a := range assets {
-		if a.Type == models.AssetTypeInvest {
+		switch a.Type {
+		case models.AssetTypeInvest:
 			hasPortfolio = true
-			break
+			investTotal += a.AmountRUB
+		case models.AssetTypeExchange:
+			if strings.Contains(a.Source, "bybit") {
+				bybitTotal += a.AmountRUB
+			}
 		}
 	}
+
 	d := &DevelopData{
-		Settings:     settings,
-		Saved:        r.URL.Query().Get("saved") == "1",
-		HasPortfolio: hasPortfolio,
-		BotRunning:   h.bot.IsRunning(uid),
+		Settings:        settings,
+		Saved:           r.URL.Query().Get("saved") == "1",
+		HasPortfolio:    hasPortfolio,
+		TraderRunning:   h.bot.IsTraderRunning(uid),
+		InvestorRunning: h.bot.IsInvestorRunning(uid),
+		BybitRunning:    h.bot.IsBybitRunning(uid),
+		InvestTotalRUB:  investTotal,
+		BybitTotalRUB:   bybitTotal,
 	}
 	h.render(w, "development.html", d, filepath.Join(h.tmplDir, "development.html"))
 }
@@ -436,29 +497,100 @@ func (h *Handler) Development(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) SaveDevelopSettings(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	uid := ctxUserID(r)
-	maxLoss, _ := strconv.ParseFloat(r.FormValue("max_loss_pct"), 64)
-	if maxLoss <= 0 {
-		maxLoss = 5.0
+
+	// Load existing as base — each form only overwrites its own fields
+	existing, _ := h.db.GetUserSettings(r.Context(), uid)
+	if existing == nil {
+		existing = &models.UserSettings{
+			UserID:                uid,
+			RiskLevel:             "medium",
+			MaxLossPct:            5.0,
+			BotIntervalMinutes:    60,
+			InvestorIntervalHours: 24,
+			BybitBotIntervalMin:   60,
+		}
 	}
-	riskLevel := r.FormValue("risk_level")
-	if riskLevel == "" {
-		riskLevel = "medium"
+
+	// Copy existing, then patch only the fields that belong to this form
+	s := *existing
+	s.UserID = uid
+	// Always reflect live bot state
+	s.BotEnabled = h.bot.IsTraderRunning(uid)
+	s.InvestorBotEnabled = h.bot.IsInvestorRunning(uid)
+	s.BybitBotEnabled = h.bot.IsBybitRunning(uid)
+
+	switch r.FormValue("__bot__") {
+
+	case "keys":
+		if v := strings.TrimSpace(r.FormValue("claude_api_key")); v != "" {
+			s.ClaudeAPIKey = v
+		}
+		if v := strings.TrimSpace(r.FormValue("tinvest_trade_token")); v != "" {
+			s.TInvestTradeToken = v
+		}
+		// Save first, then restart running bots so they pick up the new keys immediately
+		if err := h.db.SaveUserSettings(r.Context(), &s); err != nil {
+			slog.Error("save develop settings (keys)", "err", err)
+		} else {
+			traderWasRunning := h.bot.IsTraderRunning(uid)
+			investorWasRunning := h.bot.IsInvestorRunning(uid)
+			if traderWasRunning {
+				h.bot.StopTrader(uid)
+			}
+			if investorWasRunning {
+				h.bot.StopInvestor(uid)
+			}
+			if traderWasRunning || investorWasRunning {
+				go func() {
+					time.Sleep(400 * time.Millisecond)
+					if traderWasRunning {
+						h.bot.StartTrader(uid)
+					}
+					if investorWasRunning {
+						h.bot.StartInvestor(uid)
+					}
+				}()
+			}
+		}
+		http.Redirect(w, r, "/develop?saved=1", http.StatusFound)
+		return
+
+	case "investor":
+		if v := r.FormValue("risk_level"); v != "" {
+			s.RiskLevel = v
+		}
+		if v, _ := strconv.ParseFloat(r.FormValue("max_loss_pct"), 64); v > 0 {
+			s.MaxLossPct = v
+		}
+		if v, _ := strconv.Atoi(r.FormValue("investor_interval_hours")); v >= 1 {
+			s.InvestorIntervalHours = v
+		}
+
+	case "trader":
+		if v := r.FormValue("risk_level"); v != "" {
+			s.RiskLevel = v
+		}
+		if v, _ := strconv.ParseFloat(r.FormValue("max_loss_pct"), 64); v > 0 {
+			s.MaxLossPct = v
+		}
+		if v, _ := strconv.Atoi(r.FormValue("bot_interval_minutes")); v >= 15 {
+			s.BotIntervalMinutes = v
+		}
+		s.BotUseMargin = r.FormValue("bot_use_margin") == "on"
+
+	case "bybit":
+		if v := r.FormValue("risk_level"); v != "" {
+			s.RiskLevel = v
+		}
+		if v, _ := strconv.ParseFloat(r.FormValue("max_loss_pct"), 64); v > 0 {
+			s.MaxLossPct = v
+		}
+		if v, _ := strconv.Atoi(r.FormValue("bybit_bot_interval_min")); v >= 15 {
+			s.BybitBotIntervalMin = v
+		}
 	}
-	interval, _ := strconv.Atoi(r.FormValue("bot_interval_minutes"))
-	if interval < 15 {
-		interval = 60
-	}
-	s := &models.UserSettings{
-		UserID:             uid,
-		RiskLevel:          riskLevel,
-		MaxLossPct:         maxLoss,
-		ClaudeAPIKey:       strings.TrimSpace(r.FormValue("claude_api_key")),
-		TInvestTradeToken:  strings.TrimSpace(r.FormValue("tinvest_trade_token")),
-		BotEnabled:         h.bot.IsRunning(uid),
-		BotIntervalMinutes: interval,
-		BotUseMargin:       r.FormValue("bot_use_margin") == "on",
-	}
-	if err := h.db.SaveUserSettings(r.Context(), s); err != nil {
+
+	if err := h.db.SaveUserSettings(r.Context(), &s); err != nil {
 		slog.Error("save develop settings", "err", err)
 	}
 	http.Redirect(w, r, "/develop?saved=1", http.StatusFound)
@@ -546,6 +678,80 @@ func (h *Handler) BotLogsClear(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `<div style="color:var(--muted);font-size:11px;padding:8px 0">Журнал очищен</div>`)
 }
 
+// --- Investor bot ---
+
+func (h *Handler) InvestorBotStatus(w http.ResponseWriter, r *http.Request) {
+	uid := ctxUserID(r)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, investorStatusFragment(h.bot.IsInvestorRunning(uid)))
+}
+
+func (h *Handler) InvestorBotStart(w http.ResponseWriter, r *http.Request) {
+	uid := ctxUserID(r)
+	h.bot.StartInvestor(uid)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, investorStatusFragment(true))
+}
+
+func (h *Handler) InvestorBotStop(w http.ResponseWriter, r *http.Request) {
+	uid := ctxUserID(r)
+	h.bot.StopInvestor(uid)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, investorStatusFragment(false))
+}
+
+func investorStatusFragment(running bool) string {
+	if running {
+		return `<div id="investor-control" hx-get="/develop/bot/investor/status" hx-trigger="every 10s" hx-swap="outerHTML" style="display:flex;align-items:center;gap:12px">` +
+			`<span style="color:var(--green);font-size:14px;animation:pulse 2s infinite">●</span>` +
+			`<span style="font-size:11px;color:var(--green);font-weight:600">Активен</span>` +
+			`<form hx-post="/develop/bot/investor/stop" hx-target="#investor-control" hx-swap="outerHTML">` +
+			`<button type="submit" class="btn danger" style="font-size:10px;padding:5px 10px">Стоп</button></form></div>`
+	}
+	return `<div id="investor-control" hx-get="/develop/bot/investor/status" hx-trigger="every 10s" hx-swap="outerHTML" style="display:flex;align-items:center;gap:12px">` +
+		`<span style="color:var(--muted);font-size:14px">○</span>` +
+		`<span style="font-size:11px;color:var(--muted)">Остановлен</span>` +
+		`<form hx-post="/develop/bot/investor/start" hx-target="#investor-control" hx-swap="outerHTML">` +
+		`<button type="submit" class="btn primary" style="font-size:10px;padding:5px 10px">Запустить</button></form></div>`
+}
+
+// --- Bybit bot ---
+
+func (h *Handler) BybitBotStatus(w http.ResponseWriter, r *http.Request) {
+	uid := ctxUserID(r)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, bybitStatusFragment(h.bot.IsBybitRunning(uid)))
+}
+
+func (h *Handler) BybitBotStart(w http.ResponseWriter, r *http.Request) {
+	uid := ctxUserID(r)
+	h.bot.StartBybit(uid)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, bybitStatusFragment(true))
+}
+
+func (h *Handler) BybitBotStop(w http.ResponseWriter, r *http.Request) {
+	uid := ctxUserID(r)
+	h.bot.StopBybit(uid)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, bybitStatusFragment(false))
+}
+
+func bybitStatusFragment(running bool) string {
+	if running {
+		return `<div id="bybit-control" hx-get="/develop/bot/bybit/status" hx-trigger="every 10s" hx-swap="outerHTML" style="display:flex;align-items:center;gap:12px">` +
+			`<span style="color:var(--green);font-size:14px;animation:pulse 2s infinite">●</span>` +
+			`<span style="font-size:11px;color:var(--green);font-weight:600">Активен</span>` +
+			`<form hx-post="/develop/bot/bybit/stop" hx-target="#bybit-control" hx-swap="outerHTML">` +
+			`<button type="submit" class="btn danger" style="font-size:10px;padding:5px 10px">Стоп</button></form></div>`
+	}
+	return `<div id="bybit-control" hx-get="/develop/bot/bybit/status" hx-trigger="every 10s" hx-swap="outerHTML" style="display:flex;align-items:center;gap:12px">` +
+		`<span style="color:var(--muted);font-size:14px">○</span>` +
+		`<span style="font-size:11px;color:var(--muted)">Остановлен</span>` +
+		`<form hx-post="/develop/bot/bybit/start" hx-target="#bybit-control" hx-swap="outerHTML">` +
+		`<button type="submit" class="btn primary" style="font-size:10px;padding:5px 10px">Запустить</button></form></div>`
+}
+
 func (h *Handler) AnalyzePortfolio(w http.ResponseWriter, r *http.Request) {
 	uid := ctxUserID(r)
 	settings, _ := h.db.GetUserSettings(r.Context(), uid)
@@ -585,7 +791,7 @@ func (h *Handler) AnalyzePortfolio(w http.ResponseWriter, r *http.Request) {
 		riskName = "Средний"
 	}
 
-	prompt := fmt.Sprintf(`Ты — финансовый советник для российского частного инвестора на Московской бирже.
+	prompt := fmt.Sprintf(`Ты — финансовый трейдер на на Московской бирже в РФ.
 
 ПРОФИЛЬ РИСКА: %s
 Максимально допустимая потеря: %.1f%% от портфеля
@@ -593,10 +799,10 @@ func (h *Handler) AnalyzePortfolio(w http.ResponseWriter, r *http.Request) {
 ТЕКУЩИЕ ПОЗИЦИИ (T-Инвестиции, Московская биржа):
 %s
 
-Дай 3-5 конкретных торговых рекомендаций. Учитывай профиль риска:
+У тебя нет статуса квалифицированного инвестора.Дай 3-5 конкретных торговых рекомендаций. Учитывай профиль риска:
 - Низкий: только ОФЗ, SBER, GAZP, LKOH, NLMK — крупнейшие голубые фишки
 - Средний: добавляй ETF (TMOS, SBMX), 2-3 эшелон с хорошими фундаментальными показателями
-- Высокий: технологии, малые компании, спекулятивные идеи
+- Высокий: технологии, малые компании, спекулятивные идеи, фьючерсы(кроме газа)
 
 Укажи количество в ЛОТАХ (минимальная торговая единица на MOEX).
 ВАЖНО: Ответь ТОЛЬКО JSON массивом без дополнительного текста:
@@ -770,6 +976,9 @@ func templateFuncs() template.FuncMap {
 		},
 		"add": func(a, b float64) float64 {
 			return a + b
+		},
+		"mul": func(a float64, b int) float64 {
+			return a * float64(b)
 		},
 		"fmtInstrumentType": func(t string) string {
 			switch t {

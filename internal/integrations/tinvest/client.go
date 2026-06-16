@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 	"strconv"
@@ -121,7 +122,22 @@ func (c *Client) post(ctx context.Context, endpoint string, body, out any) error
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("tinvest API status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		var apiErr struct {
+			Code        int             `json:"code"`
+			Message     string          `json:"message"`
+			Description string          `json:"description"`
+			Details     json.RawMessage `json:"details"`
+		}
+		if json.Unmarshal(body, &apiErr) == nil && apiErr.Message != "" {
+			msg := fmt.Sprintf("tinvest API status %d: code=%d message=%q description=%s",
+				resp.StatusCode, apiErr.Code, apiErr.Message, apiErr.Description)
+			if len(apiErr.Details) > 0 && string(apiErr.Details) != "null" {
+				msg += fmt.Sprintf(" details=%s", apiErr.Details)
+			}
+			return fmt.Errorf("%s", msg)
+		}
+		return fmt.Errorf("tinvest API status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
 }
@@ -354,12 +370,12 @@ func (c *Client) PlaceMarketOrder(ctx context.Context, accountID, figi string, q
 	if err := c.post(ctx,
 		"/tinkoff.public.invest.api.contract.v1.OrdersService/PostOrder",
 		map[string]any{
-			"accountId":    accountID,
-			"instrumentId": figi,
-			"quantity":     quantity,
-			"direction":    direction,
-			"orderType":    "ORDER_TYPE_MARKET",
-			"orderId":      orderID,
+			"accountId": accountID,
+			"figi":      figi,
+			"quantity":  quantity,
+			"direction": direction,
+			"orderType": "ORDER_TYPE_MARKET",
+			"orderId":   orderID,
 		},
 		&resp,
 	); err != nil {

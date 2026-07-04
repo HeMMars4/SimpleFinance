@@ -1,14 +1,31 @@
 {{template "base" .}}
 {{define "content"}}
-<nav>
-  <div class="nav-brand">Simple<span>Finance</span></div>
-  <div style="display:flex; align-items:center; gap:16px">
-    <a href="/dashboard">← Дашборд</a>
-    <a href="/logout">Выход</a>
-  </div>
-</nav>
 
-<main>
+<!-- ─── RIGHT SIDEBAR ─── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <a href="/" class="nav-brand">Simple<span>Finance</span></a>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">Навигация</div>
+    <a href="/dashboard" class="sidebar-link">
+      <span class="sidebar-icon">◈</span> Дашборд
+    </a>
+    <a href="/develop" class="sidebar-link">
+      <span class="sidebar-icon">⬡</span> Развитие
+    </a>
+    <a href="/settings" class="sidebar-link active">
+      <span class="sidebar-icon">▣</span> Настройки
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="/logout" class="sidebar-link">
+      <span class="sidebar-icon">→</span> Выход
+    </a>
+  </div>
+</aside>
+
+<main class="fade-in">
   <div style="max-width:640px; margin:0 auto">
     <div style="margin-bottom:32px">
       <div style="font-family:var(--display); font-size:18px; font-weight:600; color:var(--green); margin-bottom:6px">Настройки</div>

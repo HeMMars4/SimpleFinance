@@ -1,23 +1,40 @@
-{{template "base" .}}
+d{{template "base" .}}
 {{define "content"}}
-<nav>
-  <div class="nav-brand">Simple<span>Finance</span></div>
-  <div style="display:flex; align-items:center; gap:16px">
+
+<!-- ─── RIGHT SIDEBAR ─── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <a href="/" class="nav-brand">Simple<span>Finance</span></a>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">Навигация</div>
+    <a href="/dashboard" class="sidebar-link active">
+      <span class="sidebar-icon">◈</span> Дашборд
+    </a>
+    <a href="/develop" class="sidebar-link">
+      <span class="sidebar-icon">⬡</span> Развитие
+    </a>
+    <a href="/settings" class="sidebar-link">
+      <span class="sidebar-icon">▣</span> Настройки
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
     <button
-      class="btn primary"
+      class="btn primary btn-full"
       hx-post="/refresh"
       hx-target="#dashboard-content"
       hx-indicator="#refresh-btn"
-      id="refresh-btn">
-      <span class="spinner">↻</span> Обновить
+      id="refresh-btn"
+      style="font-size:10px; padding:9px 12px">
+      <span class="spinner">↻</span> Обновить данные
     </button>
-    <a href="/develop">Развитие</a>
-    <a href="/settings">Настройки</a>
-    <a href="/logout">Выход</a>
+    <a href="/logout" class="sidebar-link" style="margin-top:2px">
+      <span class="sidebar-icon">→</span> Выход
+    </a>
   </div>
-</nav>
+</aside>
 
-<main>
+<main class="fade-in">
   <div id="dashboard-content">
     {{template "dashboard_content.html" .}}
   </div>

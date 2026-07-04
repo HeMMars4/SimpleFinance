@@ -672,6 +672,23 @@
     }
     .footer-link:hover { color: var(--text); }
 
+    /* ─── SCROLL REVEAL ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity .55s cubic-bezier(.22,1,.36,1), transform .55s cubic-bezier(.22,1,.36,1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: .08s; }
+    .reveal-delay-2 { transition-delay: .16s; }
+    .reveal-delay-3 { transition-delay: .24s; }
+    .reveal-delay-4 { transition-delay: .32s; }
+    .reveal-delay-5 { transition-delay: .40s; }
+    .reveal-delay-6 { transition-delay: .48s; }
+
     /* ─── RESPONSIVE ─── */
     @media (max-width: 768px) {
       nav { padding: 12px 16px; }
@@ -691,6 +708,10 @@
       .carousel-track { height: 380px; }
       .mock-table-head, .mock-row { grid-template-columns: 2fr 1fr 1fr; }
       .mock-th:last-child, .mock-td:last-child { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
     }
   </style>
 </head>
@@ -749,15 +770,15 @@
 
 <!-- ─── FEATURES ─── -->
 <section id="features">
-  <div class="section-tag">// возможности</div>
-  <h2 class="section-title">Финансы под контролем</h2>
-  <p class="section-desc">
+  <div class="section-tag reveal">// возможности</div>
+  <h2 class="section-title reveal reveal-delay-1">Финансы под контролем</h2>
+  <p class="section-desc reveal reveal-delay-2">
     SimpleFinance подключается к вашим счетам и собирает данные автоматически —
     вы видите полную картину без ручного ввода.
   </p>
 
   <div class="features-grid">
-    <div class="feature-card">
+    <div class="feature-card reveal reveal-delay-1">
       <span class="feature-icon">◈</span>
       <div class="feature-name">Единый дашборд</div>
       <p class="feature-text">
@@ -765,7 +786,7 @@
         Пересчёт в рублях по актуальным курсам ЦБ и биржи в реальном времени.
       </p>
     </div>
-    <div class="feature-card">
+    <div class="feature-card reveal reveal-delay-2">
       <span class="feature-icon">⬡</span>
       <div class="feature-name">Мульти-интеграция</div>
       <p class="feature-text">
@@ -773,7 +794,7 @@
         Несколько аккаунтов одного брокера — поддерживаются без ограничений.
       </p>
     </div>
-    <div class="feature-card">
+    <div class="feature-card reveal reveal-delay-3">
       <span class="feature-icon">▲</span>
       <div class="feature-name">Безопасность</div>
       <p class="feature-text">
@@ -781,7 +802,7 @@
         ваш аккаунт. Данные никогда не передаются третьим лицам.
       </p>
     </div>
-    <div class="feature-card">
+    <div class="feature-card reveal reveal-delay-4">
       <span class="feature-icon">◎</span>
       <div class="feature-name">Ручные активы</div>
       <p class="feature-text">
@@ -789,7 +810,7 @@
         в общем балансе и учитывается при расчёте состояния.
       </p>
     </div>
-    <div class="feature-card">
+    <div class="feature-card reveal reveal-delay-5">
       <span class="feature-icon">⟳</span>
       <div class="feature-name">AI-аналитика</div>
       <p class="feature-text">
@@ -797,7 +818,7 @@
         оценка рисков, ситуационный анализ рыночной конъюнктуры.
       </p>
     </div>
-    <div class="feature-card">
+    <div class="feature-card reveal reveal-delay-6">
       <span class="feature-icon">▣</span>
       <div class="feature-name">Управление ботами</div>
       <p class="feature-text">
@@ -1026,15 +1047,15 @@
 
 <!-- ─── BOTS ─── -->
 <section id="bots">
-  <div class="section-tag">// торговые боты</div>
-  <h2 class="section-title">Автоматизация торговли</h2>
-  <p class="section-desc">
+  <div class="section-tag reveal">// торговые боты</div>
+  <h2 class="section-title reveal reveal-delay-1">Автоматизация торговли</h2>
+  <p class="section-desc reveal reveal-delay-2">
     Три независимых торговых бота с разными стратегиями — от скальпинга
     до долгосрочного инвестирования. Управление из браузера, логи в реальном времени.
   </p>
 
   <div class="bots-grid">
-    <div class="bot-card trader">
+    <div class="bot-card trader reveal reveal-delay-2">
       <span class="bot-tag g">AI Трейдер</span>
       <div class="bot-name">Trader Bot</div>
       <p class="bot-desc">
@@ -1048,7 +1069,7 @@
         <li>Логи каждой сделки в реальном времени</li>
       </ul>
     </div>
-    <div class="bot-card investor">
+    <div class="bot-card investor reveal reveal-delay-3">
       <span class="bot-tag b">Долгосрок</span>
       <div class="bot-name">Investor Bot</div>
       <p class="bot-desc">
@@ -1062,7 +1083,7 @@
         <li>Интеграция с T-Инвестиции</li>
       </ul>
     </div>
-    <div class="bot-card bybit">
+    <div class="bot-card bybit reveal reveal-delay-4">
       <span class="bot-tag o">Bybit</span>
       <div class="bot-name">Bybit Bot</div>
       <p class="bot-desc">
@@ -1131,6 +1152,25 @@
   });
 
   startAuto();
+</script>
+
+<script>
+(function() {
+  var els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(function(el) { el.classList.add('visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(function(el) { io.observe(el); });
+})();
 </script>
 
 </body>

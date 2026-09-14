@@ -5,6 +5,7 @@ services:
       - "443:443"
     volumes:
       - /root/cert/muinfra.ru:/certs:ro
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
     env_file:
       - .env
     extra_hosts:

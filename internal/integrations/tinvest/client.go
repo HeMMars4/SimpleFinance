@@ -15,7 +15,7 @@ import (
 	"github.com/HeMMars4/simple-finance/internal/models"
 )
 
-const baseURL = "https://invest-public-api.tinkoff.ru/rest"
+const baseURL = "https://invest-public-api.tbank.ru/rest"
 
 type Client struct {
 	token      string
@@ -66,13 +66,13 @@ type accountsResponse struct {
 }
 
 type apiPosition struct {
-	FIGI           string     `json:"figi"`
-	InstrumentType string     `json:"instrumentType"`
-	Quantity       moneyValue `json:"quantity"`
+	FIGI                 string     `json:"figi"`
+	InstrumentType       string     `json:"instrumentType"`
+	Quantity             moneyValue `json:"quantity"`
 	AveragePositionPrice moneyValue `json:"averagePositionPrice"`
-	CurrentPrice   moneyValue `json:"currentPrice"`
-	ExpectedYield  moneyValue `json:"expectedYield"`
-	Ticker         string     `json:"ticker"`
+	CurrentPrice         moneyValue `json:"currentPrice"`
+	ExpectedYield        moneyValue `json:"expectedYield"`
+	Ticker               string     `json:"ticker"`
 }
 
 // LivePosition is a portfolio position with resolved ticker and RUB values.
